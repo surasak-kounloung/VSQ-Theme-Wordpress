@@ -22,7 +22,7 @@ Repository นี้จัดเก็บ Source Code สำหรับธี�
 generatepress_child/
 ├── assets/
 │   ├── css/              # Stylesheets สำหรับ Frontend และ Admin
-│   │   ├── admin/        # CSS เฉพาะสำหรับหน้า Admin Dashboard
+│   │   ├── admin/        # CSS เฉพาะสำหรับหน้า Admin
 │   │   └── ...
 │   ├── fonts/            # Web Fonts (Gotham Font Family)
 │   ├── js/               # JavaScript files
