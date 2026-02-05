@@ -1,0 +1,125 @@
+.cta-footer {
+    position: relative;
+    margin-top: 20px;
+    padding: 0;
+    min-width: 100%;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    background: #fff;
+    box-sizing: border-box;
+}
+.cta-row { 
+    border: 1px solid #ddd; 
+    background: #fff; 
+    margin-bottom: 15px; 
+    position: relative; 
+    border-radius: 4px;
+}
+.cta-row h3 { 
+    margin: 0; 
+    border-bottom: 1px solid #eee; 
+    padding: 10px 15px; 
+    background: #f9f9f9; 
+    cursor: move; 
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.cta-fields { 
+    padding: 15px; 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 20px; 
+    align-items: flex-start; 
+}
+.cta-field { 
+    margin-bottom: 0; 
+}
+.cta-field label { 
+    display: block; 
+    font-weight: 600; 
+    margin-bottom: 5px; 
+    font-size: 12px;
+    color: #555;
+}
+.cta-field .wp-picker-input-wrap label {
+    display: inline-block;
+}
+.cta-image-preview {
+    width: 100%;
+    min-height: 97px;
+    background: #f0f0f0;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #ccc;
+}
+.cta-image-preview img { 
+    width: auto;
+    max-width: 100%;
+    max-height: 97px;
+    display: block; 
+}
+
+/* Field Widths */
+.cta-field-image { width: 20%; }
+.cta-field-id { width: 10%; }
+.cta-field-color { width: 225px; }
+.cta-field-url { flex-grow: 1; min-width: 200px; }
+.cta-field-switch { width: 12%; }
+
+/* Color Picker */
+.wp-picker-container .iris-picker {
+    position: absolute;
+    z-index: 99;
+}
+
+/* Switch Field */
+.switch-field { 
+    display: flex; 
+    overflow: hidden; 
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+.switch-field input { 
+    position: absolute !important; 
+    clip: rect(0, 0, 0, 0); 
+    height: 1px; 
+    width: 1px; 
+    border: 0; 
+    overflow: hidden; 
+}
+.switch-field label { 
+    background-color: #fff; 
+    color: rgba(0, 0, 0, 0.6); 
+    font-size: 13px; 
+    line-height: 1; 
+    text-align: center; 
+    padding: 8px 12px; 
+    margin-bottom: 0;
+    margin-right: -1px; 
+    border-right: 1px solid rgba(0, 0, 0, 0.2); 
+    transition: all 0.1s ease-in-out; 
+    cursor: pointer; 
+    flex: 1;
+}
+.switch-field label:hover { 
+    background-color: #f5f5f5; 
+}
+.switch-field label:last-of-type { 
+    border-right: 0; 
+}
+.switch-field input:checked + label { 
+    background-color: #0073aa; 
+    color: #fff; 
+    box-shadow: none; 
+}
+.remove-row-btn {
+    color: #a00;
+    cursor: pointer;
+}
+.remove-row-btn:hover {
+    color: red;
+}

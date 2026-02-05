@@ -1,0 +1,110 @@
+.dt-repeater-container {
+    margin-top: 20px;
+}
+
+.dt-repeater-row {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+}
+
+.dt-row-header {
+    background: #fcfcfc;
+    border-bottom: 1px solid #ccd0d4;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    cursor: move;
+}
+
+.dt-row-header .dt-row-handle {
+    color: #999;
+    margin-right: 10px;
+    cursor: move;
+}
+
+.dt-row-header .dt-row-title {
+    font-weight: 600;
+    margin-right: auto;
+}
+
+.dt-row-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.dt-row-actions span {
+    cursor: pointer;
+    color: #72777c;
+}
+
+.dt-row-actions span:hover {
+    color: #0073aa;
+}
+
+.dt-row-actions .dt-remove-row:hover {
+    color: #dc3232;
+}
+
+.dt-row-content {
+    padding: 15px;
+    background: #fff;
+}
+
+.dt-row-content.hidden {
+    display: none;
+}
+
+/* Grid Layouts */
+.dt-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px 15px;
+}
+
+.dt-field-col {
+    padding: 0 10px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+.dt-field-col label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.dt-field-col input[type="text"], 
+.dt-field-col select, 
+.dt-field-col textarea {
+    width: 100%;
+}
+
+.dt-field-checkbox {
+    padding-top: 6px;
+}
+
+/* Header Section */
+.dt-header-section {
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #ccd0d4;
+    margin-bottom: 20px;
+}
+
+/* Specific Widths based on screenshot */
+.col-1-8 { width: 12.5%; }
+.col-1-7 { width: 14.28%; } /* For 7 days */
+.col-1-2 { width: 50%; }
+.col-1-3 { width: 33.33%; }
+.col-1-4 { width: 25%; }
+.col-3-4 { width: 75%; }
+
+/* Toggle Indicator */
+.dt-toggle-row.dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+

@@ -1,0 +1,178 @@
+.dt-repeater-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.dt-repeater-row {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.dt-row-header {
+    background: #fcfcfc;
+    border-bottom: 1px solid #ccd0d4;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+}
+
+.dt-row-header .dt-row-handle {
+    color: #999;
+    margin-right: 10px;
+}
+
+.dt-row-header .dt-row-title {
+    font-weight: 600;
+    margin-right: auto;
+}
+
+.dt-row-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.dt-row-actions span {
+    cursor: pointer;
+    color: #72777c;
+}
+
+.dt-row-actions span:hover {
+    color: #0073aa;
+}
+
+.dt-row-actions .dt-remove-row:hover {
+    color: #dc3232;
+}
+
+.dt-row-content {
+    padding: 15px;
+    background: #fff;
+}
+
+.dt-row-content.hidden {
+    display: none;
+}
+
+/* Grid Layouts */
+.dt-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px 15px;
+}
+
+.dt-field-col {
+    width: 100%;
+    padding: 0 10px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+.dt-field-col label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.dt-field-col input[type="text"], 
+.dt-field-col select, 
+.dt-field-col textarea {
+    width: 100%;
+}
+
+/* Image Preview */
+.product-image-preview-wrapper {
+    margin-top: 10px;
+    width: 100%;
+    max-width: 100%;
+    background: #f0f0f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-image-preview {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 600px;
+    display: block;
+}
+
+.product-image-preview[src=""] {
+    display: none;
+}
+
+/* Toolbar & Pagination */
+.dt-toolbar {
+    background: #f1f1f1;
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: auto;
+}
+
+.dt-toolbar .actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dt-toolbar .tablenav-pages {
+    float: none;
+    margin: 0;
+}
+
+/* Select2 Adjustments */
+#product-image-filter-category {
+    height: 35px;
+}
+
+#product-image-filter-category, 
+#product-image-filter-category + .select2-container {
+    min-width: 181px;
+}
+
+.select2-container .select2-selection--single {
+    height: 35px;
+    border-color: #8c8f94;
+}
+
+.select2-container input[type=date], 
+.select2-container input[type=datetime-local], 
+.select2-container input[type=datetime], 
+.select2-container input[type=email], input[type=month], 
+.select2-container input[type=number], input[type=password], 
+.select2-container input[type=search], 
+.select2-container input[type=tel], 
+.select2-container input[type=text], 
+.select2-container input[type=time], 
+.select2-container input[type=url], 
+.select2-container input[type=week] {
+    line-height: 1;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    font-size: 14px;
+    line-height: 32px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    right: 5px;
+    height: 34px;
+}
+
+.select2-results__options {
+    max-height: 186px !important; 
+}
+
+.select2-results__option {
+    font-size: 14px;
+    padding: 6px;
+    margin-bottom: 0;
+}

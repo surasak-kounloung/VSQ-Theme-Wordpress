@@ -1,0 +1,155 @@
+/* Main Layout */
+.sb-repeater-container {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-bottom: none; /* Rows handle border */
+}
+
+/* Repeater Row Structure */
+.sb-repeater-row {
+    display: flex;
+    border-bottom: 1px solid #ccd0d4;
+    background: #f9f9f9;
+}
+
+.sb-repeater-row:nth-child(even) {
+    background: #fff;
+}
+
+/* Left Handle Column */
+.sb-row-header {
+    width: 40px;
+    background: #f1f1f1;
+    border-right: 1px solid #ccd0d4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+    cursor: move;
+    flex-shrink: 0;
+}
+
+.sb-row-handle {
+    cursor: move;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+.sb-row-handle:hover {
+    color: #333;
+}
+
+.sb-row-number {
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.sb-remove-row {
+    cursor: pointer;
+    color: #a00;
+    margin-top: auto; /* Push to bottom if height allows, or just margin */
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+.sb-remove-row:hover {
+    opacity: 1;
+    color: #dc3232;
+}
+
+/* Right Content Column */
+.sb-row-content {
+    flex-grow: 1;
+    padding: 15px;
+}
+
+.sb-row-columns {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.sb-row-columns:last-child {
+    margin-bottom: 0;
+}
+
+.sb-column {
+    box-sizing: border-box;
+}
+
+/* Fields */
+.sb-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #444;
+}
+
+.sb-field input[type="text"].widefat {
+    width: 100%;
+}
+
+.sb-field-checkbox {
+    padding-top: 6px;
+}
+
+/* Image Preview */
+.sb-image-preview-wrapper {
+    background: #f0f0f1;
+    border: 1px dashed #ccc;
+    padding: 10px;
+    text-align: center;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.sb-image-preview img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-bottom: 10px;
+    max-height: 200px;
+}
+
+.sb-upload-image, .sb-remove-image {
+    margin-top: 5px !important;
+}
+
+/* Add Button Area */
+.sb-actions {
+    background: #f1f1f1;
+    border: 1px solid #ccd0d4;
+    border-top: none;
+    padding: 10px;
+    text-align: right;
+}
+
+/* Sortable Placeholder */
+.ui-sortable-placeholder {
+    border: 1px dashed #ccc;
+    background: #f9f9f9;
+    visibility: visible !important;
+    height: 100px;
+}
+
+/* Sidebar Fixes */
+#postbox-container-1 {
+    float: right;
+    width: 280px;
+}
+
+#postbox-container-2 {
+    float: left;
+    width: calc(100% - 300px);
+}
+
+@media only screen and (max-width: 850px) {
+    #postbox-container-1, #postbox-container-2 {
+        float: none;
+        width: 100%;
+    }
+}

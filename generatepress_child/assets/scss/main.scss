@@ -1,0 +1,14 @@
+$max-viewport-nb: 1920;
+$max-viewport-mb: 767;
+@function get-vw-nb($target) {
+    $vw-context: ($max-viewport-nb * .01) * 1px;
+    @return calc($target / $vw-context) * 1vw;
+}
+@function get-vw-mb($target-mb) {
+    $vw-context2: ($max-viewport-mb * .01) * 1px;
+    @return calc($target-mb / $vw-context2) * 1vw;
+}
+
+html, body {
+    overflow-x: hidden;
+}
