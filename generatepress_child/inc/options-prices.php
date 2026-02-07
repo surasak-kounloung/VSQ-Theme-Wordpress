@@ -10,22 +10,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Helper: Define the exact schema fields
 function prices_get_schema_fields() {
     return array(
-        'code',
+        // 'code',
         'treatment_group_code',
         'treatment_group_name',
         'product_master_name',
-        'product_master_short_name',
-        'unit_name',
+        // 'product_master_short_name',
         'quantity',
+        'unit_name',
         'normal_price',
         'normal_unit_price',
-        'sale_type',
-        'body_position_group_name',
+        // 'sale_type',
+        // 'body_position_group_name',
         'body_position_name',
         'treatment_by',
-        'treatment_group_id',
-        'body_position_id',
-        'treatment_id'
+        // 'treatment_group_id',
+        // 'body_position_id',
+        // 'treatment_id'
+    );
+}
+
+// Helper: Define the head table fields
+function prices_get_head_table() {
+    return array(
+        // 'code',
+        'Shortcode',
+        'Product Name',
+        'Product',
+        // 'product_master_short_name',
+        'Quantity',
+        'Unit Name',
+        'Price',
+        'Unit Price',
+        // 'sale_type',
+        // 'body_position_group_name',
+        'Body Position',
+        'Treatment By',
+        // 'treatment_group_id',
+        // 'body_position_id',
+        // 'treatment_id'
     );
 }
 
@@ -48,6 +70,29 @@ function prices_settings_init() {
     register_setting( 'prices_option_group', 'prices_data' );
 }
 add_action( 'admin_init', 'prices_settings_init' );
+
+// 3. Enqueue Assets (JS/CSS)
+function prices_admin_assets( $hook ) {
+    if ( 'toplevel_page_prices-settings' !== $hook ) {
+        return;
+    }
+
+    wp_enqueue_style( 
+        'prices-admin-css', 
+        get_stylesheet_directory_uri() . '/assets/css/admin/admin-prices.css', 
+        array(), 
+        filemtime( get_stylesheet_directory() . '/assets/css/admin/admin-prices.css' ) 
+    );
+
+    wp_enqueue_script( 
+        'prices-admin-js', 
+        get_stylesheet_directory_uri() . '/assets/js/admin/admin-prices.js', 
+        array( 'jquery', 'jquery-ui-sortable' ), 
+        filemtime( get_stylesheet_directory() . '/assets/js/admin/admin-prices.js' ), 
+        true 
+    );
+}
+add_action( 'admin_enqueue_scripts', 'prices_admin_assets' );
 
 /**
  * Handle CSV Import/Export Actions
@@ -176,6 +221,42 @@ function prices_options_page_html() {
     $data = get_option( 'prices_data', array() );
     $all_items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
     $fields = prices_get_schema_fields();
+    $head_table = prices_get_head_table();
+
+    // Filter Logic
+    $body_positions = array();
+    foreach ($all_items as $itm) {
+        if (!empty($itm['body_position_name'])) {
+            $body_positions[] = $itm['body_position_name'];
+        }
+    }
+    $body_positions = array_unique($body_positions);
+    sort($body_positions);
+
+    $search_query = isset($_GET['s']) ? trim(sanitize_text_field($_GET['s'])) : '';
+    $filter_pos   = isset($_GET['body_pos']) ? trim(sanitize_text_field($_GET['body_pos'])) : '';
+
+    if ( $search_query || $filter_pos ) {
+        $all_items = array_filter($all_items, function($item) use ($search_query, $filter_pos) {
+            // 1. Filter by Body Position
+            if ( $filter_pos && ( !isset($item['body_position_name']) || $item['body_position_name'] !== $filter_pos ) ) {
+                return false;
+            }
+
+            // 2. Search Text
+            if ( $search_query ) {
+                $found = false;
+                foreach ($item as $val) {
+                    if ( is_string($val) && stripos($val, $search_query) !== false ) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if ( ! $found ) return false;
+            }
+            return true;
+        });
+    }
 
     // Pagination Logic
     $per_page = 50;
@@ -229,8 +310,33 @@ function prices_options_page_html() {
 
         <!-- Data Table -->
         <div style="margin-top: 20px; padding: 0;">
-            <h2 style="padding: 15px 15px 0; margin: 0;">Current Data Preview</h2>
-            <div style="padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0 0;">
+                <h2 style="margin: 0;">Current Data Preview</h2>
+                
+                <!-- Search & Filter Form -->
+                <form method="get" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="hidden" name="page" value="prices-settings" />
+                    
+                    <select name="body_pos">
+                        <option value="">-- All Positions --</option>
+                        <?php foreach ($body_positions as $pos): ?>
+                            <option value="<?php echo esc_attr($pos); ?>" <?php selected($filter_pos, $pos); ?>>
+                                <?php echo esc_html($pos); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <input type="search" name="s" value="<?php echo esc_attr($search_query); ?>" placeholder="Search..." />
+                    
+                    <button type="submit" class="button">Filter</button>
+                    
+                    <?php if ($search_query || $filter_pos): ?>
+                        <a href="<?php echo admin_url('admin.php?page=prices-settings'); ?>" class="button">Reset</a>
+                    <?php endif; ?>
+                </form>
+            </div>
+
+            <div>
                 <?php if ( empty( $all_items ) ) : ?>
                     <p>No prices found. Please import a CSV file.</p>
                 <?php else : ?>
@@ -255,12 +361,12 @@ function prices_options_page_html() {
                         <br class="clear">
                     </div>
 
-                    <div style="overflow-x: auto;">
+                    <div class="wp-list-table-wrapper">
                         <table class="wp-list-table widefat fixed striped table-view-list">
                             <thead>
                                 <tr>
-                                    <?php foreach ($fields as $field): ?>
-                                        <th><?php echo esc_html($field); ?></th>
+                                    <?php foreach ($head_table as $head): ?>
+                                        <th><?php echo esc_html($head); ?></th>
                                     <?php endforeach; ?>
                                 </tr>
                             </thead>
@@ -273,8 +379,6 @@ function prices_options_page_html() {
                                             <td>
                                                 <?php if ($field === 'code'): ?>
                                                     <code><?php echo esc_html($val); ?></code>
-                                                <?php elseif ($field === 'product_master_name'): ?>
-                                                    <strong><?php echo esc_html($val); ?></strong>
                                                 <?php else: ?>
                                                     <?php echo esc_html($val); ?>
                                                 <?php endif; ?>
