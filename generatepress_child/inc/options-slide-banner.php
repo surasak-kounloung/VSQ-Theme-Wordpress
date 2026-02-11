@@ -110,6 +110,22 @@ function sb_options_page_html()
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Shortcode Usage Box -->
+                        <div class="postbox">
+                            <div class="postbox-header">
+                                <h2 class="heading">Shortcode Usage</h2>
+                            </div>
+                            <div class="inside">
+                                <div class="postbox-code">
+                                    <code>[slide_banner]</code>
+                                </div>
+                                <div class="postbox-code-description">
+                                    <p>แสดง Slide Banner</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Main Content (Left Column) -->
@@ -166,10 +182,10 @@ function sb_render_slide_row($index, $data)
     $image_mobile = isset($data['image_mobile']) ? $data['image_mobile'] : '';
     $image_mobile_id = isset($data['image_mobile_id']) ? $data['image_mobile_id'] : '';
 
-    $link = isset($data['link']) ? $data['link'] : '';
+    $external_url = isset($data['external_url']) ? $data['external_url'] : '';
+    $url = isset($data['url']) ? $data['url'] : '';
     $new_tab = isset($data['new_tab']) ? $data['new_tab'] : '';
 
-    // Construct field names: slide_banner_data[0][image_pc], etc.
 ?>
     <div class="sb-repeater-row">
         <div class="sb-row-header">
@@ -230,17 +246,17 @@ function sb_render_slide_row($index, $data)
 
             <div class="sb-row-columns">
                 <!-- Link -->
-                <div class="sb-column" style="width: 75%;">
-                    <div class="sb-field" style="width: 25%;">
+                <div class="sb-column" style="width: 75%; display: flex; justify-content: flex-start; align-items: flex-start;">
+                    <div class="sb-field" style="width: 20%;">
                         <label>External URL</label>
                         <div class="sb-field-checkbox">
-                            <input type="checkbox" name="slide_banner_data[<?php echo $index; ?>][external_url]" value="1" <?php checked($external_url, '1'); ?>>
+                            <input type="checkbox" class="sb-external-url-checkbox" name="slide_banner_data[<?php echo $index; ?>][external_url]" value="1" <?php checked($external_url, '1'); ?>>
                             Enable
                         </div>
                     </div>
-                    <div class="sb-field" style="width: 75%;">
+                    <div class="sb-field" style="width: 80%;">
                         <label>URL</label>
-                        <input type="text" name="slide_banner_data[<?php echo $index; ?>][link]" value="<?php echo esc_attr($link); ?>" placeholder="https://..." class="widefat">
+                        <input type="text" name="slide_banner_data[<?php echo $index; ?>][url]" value="<?php echo esc_attr($url); ?>" placeholder="<?php echo ($external_url === '1') ? 'https://...' : '/promotion/'; ?>" class="widefat sb-url-input">
                     </div>
                 </div>
                 <!-- New Tab -->
@@ -275,15 +291,15 @@ function sb_shortcode()
             <?php foreach ($slides as $slide) :
                 $image_pc_id = isset($slide['image_pc_id']) ? $slide['image_pc_id'] : '';
                 $image_mobile_id = isset($slide['image_mobile_id']) ? $slide['image_mobile_id'] : '';
-
-                $link = isset($slide['link']) ? $slide['link'] : '#';
+                $external_url = isset($slide['external_url']) ? $slide['external_url'] : '';
+                $url = isset($slide['url']) ? $slide['url'] : '#';
                 $target = isset($slide['new_tab']) && $slide['new_tab'] ? '_blank' : '';
 
                 if (! $image_pc_id && ! $image_mobile_id) continue;
             ?>
                 <div class="slide-banner-item">
-                    <?php if ($link) : ?>
-                        <a href="<?php echo esc_url($link); ?>" <?php if ($target) { ?> target="<?php echo esc_attr($target); ?>" <?php } ?>>
+                    <?php if ($url) : ?>
+                        <a href="<?php if ($external_url === '1') { echo esc_url($url); } else { echo esc_url( home_url( $url ) ); } ?>" <?php if ($target) { ?> target="<?php echo esc_attr($target); ?>" <?php } ?>>
                         <?php endif; ?>
                         <?php if ($image_pc_id) : ?>
                             <!-- PC Image -->
@@ -298,7 +314,7 @@ function sb_shortcode()
                                 <?php echo wp_get_attachment_image($image_mobile_id, 'full', false, array('class' => '')); ?>
                             </div>
                         <?php endif; ?>
-                        <?php if ($link) : ?>
+                        <?php if ($url) : ?>
                         </a>
                     <?php endif; ?>
                 </div>

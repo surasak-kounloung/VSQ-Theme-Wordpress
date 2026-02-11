@@ -58,6 +58,23 @@ jQuery(document).ready(function($) {
         uploadBtn.show();
     });
 
+    // Toggle URL Placeholder
+    $(document).on('change', '.sb-external-url-checkbox', function() {
+        var checkbox = $(this);
+        // Navigate up to the column container that holds both fields
+        // structure: .sb-column > .sb-field > .sb-field-checkbox > input
+        // and .sb-column > .sb-field > input.sb-url-input
+        var container = checkbox.closest('.sb-column');
+        var urlInput = container.find('.sb-url-input');
+
+        if (checkbox.is(':checked')) {
+            urlInput.attr('placeholder', 'https://...');
+        } else {
+            urlInput.attr('placeholder', '/promotion/');
+        }
+        urlInput.val('');
+    });
+
     // Repeater Logic
     $('.sb-repeater-add').on('click', function(e) {
         e.preventDefault();

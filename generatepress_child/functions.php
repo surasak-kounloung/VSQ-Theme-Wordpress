@@ -147,6 +147,28 @@ add_action( 'init', 'register_page_doctor', 0 );
 
 
 /**
+ * Add Shortcode Explanation to Doctor Post Type List (Table Nav)
+ */
+function vsq_doctor_table_nav_info( $which ) {
+    $screen = get_current_screen();
+    
+    // Check if we are on the doctor post type edit screen and in the top position
+    if ( ! $screen || 'edit-page_doctor' !== $screen->id || 'top' !== $which ) {
+        return;
+    }
+    ?>
+    <div class="alignleft actions">
+        <span style="display: flex; align-items: center; line-height: 1; margin-right: 10px; color: #555; font-weight: 500; padding-top: 3px;">
+            <span class="dashicons dashicons-shortcode" style="margin-top: 2px; margin-right: 4px;"></span> 
+            Shortcode: <code style="padding: 4px 6px 5px; margin: 0 5px 0 10px;">[doctors_list]</code> แสดงรายการแพทย์ทั้งหมด
+        </span>
+    </div>
+    <?php
+}
+add_action( 'manage_posts_extra_tablenav', 'vsq_doctor_table_nav_info' );
+
+
+/**
  * Remove GeneratePress Layout Meta Box for Page Doctor
  */
 add_action( 'do_meta_boxes', 'remove_doctor_layout_meta_box' );

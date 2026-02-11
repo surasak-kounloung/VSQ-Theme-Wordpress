@@ -108,3 +108,35 @@
     height: 20px;
 }
 
+/* Shortcode Usage Box */
+#post-body.columns-2 #side-sortables {
+    min-height: unset;
+}
+
+.postbox-code {
+    padding-top: 10px;
+}
+
+.postbox-code code, 
+.postbox-code kbd {
+    font-size: 14px;
+    padding: 4px 8px 5px;
+    margin: 0;
+}
+
+.postbox-code-description {
+    font-size: 13px;
+    margin-top: 5px;
+    padding: 0 10px;
+}
+
+.postbox-code-description p {
+    display: block;
+    font-size: inherit;
+    color: inherit;
+    margin: 0;
+}
+
+#side-sortables .inside hr {
+    margin: 12px 0 7px;
+}

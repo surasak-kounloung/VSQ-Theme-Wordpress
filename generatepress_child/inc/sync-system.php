@@ -160,16 +160,31 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender' ) {
     );
 
     // Hook for Options
-    add_action( 'updated_option', 'vsq_sync_on_option_update', 10, 3 );
-    function vsq_sync_on_option_update( $option_name, $old_value, $value ) {
+    // Use 'pre_update_option' filter to trigger sync.
+    // This runs BEFORE the value is saved, so it catches the update even if the value hasn't changed.
+    add_filter( 'pre_update_option', 'vsq_sync_on_pre_update_option', 10, 3 );
+
+    function vsq_sync_on_pre_update_option( $value, $option, $old_value ) {
         global $vsq_sync_allowed_options;
-        if ( in_array( $option_name, $vsq_sync_allowed_options ) ) {
+        
+        // Check if this option is in our allowed list
+        if ( is_array( $vsq_sync_allowed_options ) && in_array( $option, $vsq_sync_allowed_options ) ) {
+            // Trigger Sync
             vsq_sync_broadcast_data( 'option', array(
-                'name' => $option_name,
+                'name' => $option,
                 'value' => $value
             ) );
         }
+
+        // Always return the value for the filter
+        return $value;
     }
+
+    /* 
+    // Old Hook (Deprecated for this purpose as it doesn't fire on no-change)
+    // add_action( 'updated_option', 'vsq_sync_on_option_update', 10, 3 );
+    // function vsq_sync_on_option_update( $option_name, $old_value, $value ) { ... }
+    */
 
     // Hook for Posts
     add_action( 'save_post', 'vsq_sync_on_save_post', 20, 3 );

@@ -106,6 +106,29 @@ function dt_options_page_html() {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Shortcode Usage Box -->
+                        <div class="postbox">
+                            <div class="postbox-header">
+                                <h2 class="heading">Shortcode Usage</h2>
+                            </div>
+                            <div class="inside">
+                                <div class="postbox-code">
+                                    <code>[doctors_table]</code>
+                                </div>
+                                <div class="postbox-code-description">
+                                    <p>แสดงตารางแพทย์ทั้งหมด</p>
+                                </div>
+                                <hr>
+                                <div class="postbox-code">
+                                    <code>[doctors_table_update_date]</code>
+                                </div>
+                                <div class="postbox-code-description">
+                                    <p>แสดงเฉพาะวันที่อัปเดตข้อมูล</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Main Content (Left Column) -->

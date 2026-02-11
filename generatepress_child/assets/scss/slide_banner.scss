@@ -14,6 +14,7 @@ $max-viewport-mb: 768;
     left: 50%;
     width: 1920px;
     margin: 0 auto;
+    padding-bottom: 45px;
     transform: translateX(-50%);
 }
 .slide-banner-list {
@@ -30,9 +31,9 @@ $max-viewport-mb: 768;
     width: 100%;
     height: 100%;
 }
-.slide-banner-image-wrapper a {
+.slide-banner-item a {
     display: block;
-    width: 100%;
+    width: auto;
     height: 100%;
     cursor: pointer;
 }
@@ -102,6 +103,7 @@ $max-viewport-mb: 768;
 @media (max-width: 1919px) {
     .section-slide-banner {
         width: 100vw;
+        padding-bottom: get-vw-dt(45px);
     }
     .slide-banner-list {
         height: get-vw-dt(732px);
@@ -128,6 +130,9 @@ $max-viewport-mb: 768;
     }
 }
 @media (max-width: 768px) {
+    .section-slide-banner {
+        padding-bottom: get-vw-mb(55px);
+    }
     .slide-banner-list {
         height: get-vw-mb(933px);
         max-height: unset;
