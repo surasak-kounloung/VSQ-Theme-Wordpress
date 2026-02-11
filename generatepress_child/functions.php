@@ -23,6 +23,9 @@ require_once get_stylesheet_directory() . '/inc/options-product-images.php';
 require_once get_stylesheet_directory() . '/inc/options-cta-footer.php';
 require_once get_stylesheet_directory() . '/inc/options-popup-newyear.php';
 
+/** Sync System */
+require_once get_stylesheet_directory() . '/inc/sync-system.php';
+
 
  /**
  * Load Google Fonts

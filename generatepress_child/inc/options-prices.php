@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Helper: Define the exact schema fields
 function prices_get_schema_fields() {
     return array(
-        // 'code',
-        'treatment_group_code',
+        'code',
+        // 'treatment_group_code',
         'treatment_group_name',
         'product_master_name',
         // 'product_master_short_name',
@@ -32,19 +32,19 @@ function prices_get_schema_fields() {
 // Helper: Define the head table fields
 function prices_get_head_table() {
     return array(
-        // 'code',
         'Shortcode',
+        // 'treatment_group_code',
         'Product Name',
         'Product',
         // 'product_master_short_name',
         'Quantity',
-        'Unit Name',
+        'Unit',
         'Price',
         'Unit Price',
         // 'sale_type',
         // 'body_position_group_name',
         'Body Position',
-        'Treatment By',
+        'By',
         // 'treatment_group_id',
         // 'body_position_id',
         // 'treatment_id'
@@ -103,20 +103,25 @@ function prices_handle_csv_actions() {
     }
 
     $fields = prices_get_schema_fields();
+    
+    // Determine Type (single vs course)
+    $price_type = isset($_POST['price_type']) ? sanitize_text_field($_POST['price_type']) : 'single';
+    // Map to data keys: 'items' for single, 'course_items' for course
+    $data_key = ($price_type === 'course') ? 'course_items' : 'items';
 
     // --- Export Action ---
     if ( isset( $_POST['action'] ) && 'export_prices_csv' === $_POST['action'] ) {
         check_admin_referer( 'prices_export_csv', 'prices_export_nonce' );
         
         $data = get_option( 'prices_data', array() );
-        $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
+        $items = isset($data[$data_key]) && is_array($data[$data_key]) ? $data[$data_key] : array();
         
         if ( ob_get_level() ) {
             ob_end_clean();
         }
 
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=prices-export-' . date('Y-m-d') . '.csv');
+        header('Content-Disposition: attachment; filename=prices-' . $price_type . '-export-' . date('Y-m-d') . '.csv');
         header('Pragma: no-cache');
         header('Expires: 0');
         
@@ -190,8 +195,8 @@ function prices_handle_csv_actions() {
                             }
                         }
 
-                        // Only add if we have some data, preferably a 'code'
-                        if ( $has_data && !empty($item['code']) ) {
+                        // Only add if we have some data, checking 'code'
+                        if ( $has_data && ( !empty($item['code']) ) ) {
                             $new_items[] = $item;
                         }
                     }
@@ -200,10 +205,20 @@ function prices_handle_csv_actions() {
                 fclose($handle);
                 
                 if ( !empty($new_items) ) {
-                    update_option( 'prices_data', array('items' => $new_items) );
-                    set_transient('prices_import_message', 'Imported ' . count($new_items) . ' items successfully.', 30);
+                    // Get current data to preserve other keys
+                    $current_data = get_option( 'prices_data', array() );
+                    $current_data[$data_key] = $new_items;
+                    
+                    update_option( 'prices_data', $current_data );
+                    set_transient('prices_import_message', 'Imported ' . count($new_items) . ' items successfully into ' . ucfirst($price_type) . '.', 30);
+                } else {
+                    set_transient('prices_import_error', 'Import failed: No valid items found. Please check CSV headers and data.', 30);
                 }
+            } else {
+                set_transient('prices_import_error', 'Import failed: Unable to open CSV file.', 30);
             }
+        } else {
+            set_transient('prices_import_error', 'Import failed: No file selected.', 30);
         }
         
         wp_redirect( remove_query_arg(array('settings-updated'), wp_get_referer()) );
@@ -218,8 +233,11 @@ function prices_options_page_html() {
         return;
     }
 
+    $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'single';
+    $data_key = ($active_tab === 'course') ? 'course_items' : 'items';
+
     $data = get_option( 'prices_data', array() );
-    $all_items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
+    $all_items = isset($data[$data_key]) && is_array($data[$data_key]) ? $data[$data_key] : array();
     $fields = prices_get_schema_fields();
     $head_table = prices_get_head_table();
 
@@ -271,15 +289,26 @@ function prices_options_page_html() {
         delete_transient('prices_import_message');
     }
 
+    if ( $err = get_transient('prices_import_error') ) {
+        add_settings_error( 'prices_data', 'prices_import_error', $err, 'error' );
+        delete_transient('prices_import_error');
+    }
+
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">Prices Settings</h1>
         <hr class="wp-header-end">
 
         <?php settings_errors( 'prices_data' ); ?>
+
+        <!-- TABS -->
+        <nav class="nav-tab-wrapper">
+            <a href="?page=prices-settings&tab=single" class="nav-tab <?php echo $active_tab == 'single' ? 'nav-tab-active' : ''; ?>">Single Prices</a>
+            <a href="?page=prices-settings&tab=course" class="nav-tab <?php echo $active_tab == 'course' ? 'nav-tab-active' : ''; ?>">Course Prices</a>
+        </nav>
         
-        <div class="card" style="margin-top: 20px; margin-bottom: 20px; padding: 15px; max-width: 100%;">
-            <h2 style="margin-top:0;">Manage Prices via CSV</h2>
+        <div class="card" style="margin-top: 20px; margin-bottom: 20px; padding: 15px 15px 25px; max-width: 100%;">
+            <h2 style="margin-top:0;">Manage <?php echo ($active_tab === 'course') ? 'Course' : 'Single'; ?> Prices via CSV</h2>
             <p><strong>Required CSV Headers:</strong> <code><?php echo implode(', ', $fields); ?></code></p>
             
             <div style="display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap;">
@@ -289,6 +318,7 @@ function prices_options_page_html() {
                     <form method="post" action="">
                         <?php wp_nonce_field( 'prices_export_csv', 'prices_export_nonce' ); ?>
                         <input type="hidden" name="action" value="export_prices_csv">
+                        <input type="hidden" name="price_type" value="<?php echo esc_attr($active_tab); ?>">
                         <button type="submit" class="button"><span class="dashicons dashicons-download" style="margin-top:3px;"></span> Download CSV</button>
                     </form>
                 </div>
@@ -298,9 +328,10 @@ function prices_options_page_html() {
                     <form method="post" action="" enctype="multipart/form-data">
                         <?php wp_nonce_field( 'prices_import_csv', 'prices_import_nonce' ); ?>
                         <input type="hidden" name="action" value="import_prices_csv">
+                        <input type="hidden" name="price_type" value="<?php echo esc_attr($active_tab); ?>">
                         <input type="file" name="prices_csv_file" required accept=".csv,.xlsx" style="margin-bottom: 10px;">
                         <br>
-                        <button type="submit" class="button button-primary" onclick="return confirm('Are you sure? This will overwrite existing prices.');">
+                        <button type="submit" class="button button-primary btn-upload" onclick="return confirm('Are you sure? This will overwrite existing prices.');">
                             <span class="dashicons dashicons-upload" style="margin-top:3px;"></span> Upload & Import
                         </button>
                     </form>
@@ -316,6 +347,7 @@ function prices_options_page_html() {
                 <!-- Search & Filter Form -->
                 <form method="get" style="display: flex; gap: 10px; align-items: center;">
                     <input type="hidden" name="page" value="prices-settings" />
+                    <input type="hidden" name="tab" value="<?php echo esc_attr($active_tab); ?>" />
                     
                     <select name="body_pos">
                         <option value="">-- All Positions --</option>
@@ -331,7 +363,7 @@ function prices_options_page_html() {
                     <button type="submit" class="button">Filter</button>
                     
                     <?php if ($search_query || $filter_pos): ?>
-                        <a href="<?php echo admin_url('admin.php?page=prices-settings'); ?>" class="button">Reset</a>
+                        <a href="<?php echo admin_url('admin.php?page=prices-settings&tab=' . $active_tab); ?>" class="button">Reset</a>
                     <?php endif; ?>
                 </form>
             </div>
@@ -350,44 +382,43 @@ function prices_options_page_html() {
                                 echo paginate_links( array(
                                     'base' => add_query_arg( 'paged', '%#%' ),
                                     'format' => '',
-                                    'prev_text' => '&laquo;',
-                                    'next_text' => '&raquo;',
+                                    'prev_text' => '',
+                                    'next_text' => '',
                                     'total' => $total_pages,
                                     'current' => $current_page
                                 ));
                                 ?>
                             </span>
                         </div>
-                        <br class="clear">
                     </div>
 
                     <div class="wp-list-table-wrapper">
-                        <table class="wp-list-table widefat fixed striped table-view-list">
-                            <thead>
-                                <tr>
-                                    <?php foreach ($head_table as $head): ?>
-                                        <th><?php echo esc_html($head); ?></th>
-                                    <?php endforeach; ?>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ( $items as $item ) : ?>
-                                    <tr>
-                                        <?php foreach ($fields as $field): 
-                                            $val = isset($item[$field]) ? $item[$field] : '-';
-                                        ?>
-                                            <td>
-                                                <?php if ($field === 'code'): ?>
-                                                    <code><?php echo esc_html($val); ?></code>
-                                                <?php else: ?>
-                                                    <?php echo esc_html($val); ?>
-                                                <?php endif; ?>
-                                            </td>
-                                        <?php endforeach; ?>
-                                    </tr>
+                        <div class="wp-list-table">
+                            <div class="wp-list-table-head">
+                                <?php foreach ($head_table as $head): ?>
+                                    <div class="wp-list-table-head-item"><?php echo esc_html($head); ?></div>
                                 <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                            </div>
+                            <div class="wp-list-table-body">
+                                <?php foreach ($items as $item): ?>
+                                    <div class="wp-list-table-body-item">
+                                        <?php foreach ($fields as $field): ?>
+                                            <?php if ($field === 'code'): ?>
+                                                <div class="wp-list-table-body-item-cell"><code><?php echo esc_html($item[$field]); ?></code></div>
+                                            <?php elseif ($field === 'product_master_name'): ?>
+                                                <div class="wp-list-table-body-item-cell product-name"><?php echo esc_html($item[$field]); ?></div>
+                                            <?php elseif ($field === 'quantity'): ?>
+                                                <div class="wp-list-table-body-item-cell quantity"><?php echo esc_html($item[$field]); ?></div>
+                                            <?php elseif ($field === 'normal_price'): ?>
+                                                <div class="wp-list-table-body-item-cell price"><?php echo esc_html($item[$field]); ?></div>
+                                            <?php else: ?>
+                                                <div class="wp-list-table-body-item-cell"><?php echo esc_html($item[$field]); ?></div>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="tablenav bottom">
@@ -397,8 +428,8 @@ function prices_options_page_html() {
                                 echo paginate_links( array(
                                     'base' => add_query_arg( 'paged', '%#%' ),
                                     'format' => '',
-                                    'prev_text' => '&laquo;',
-                                    'next_text' => '&raquo;',
+                                    'prev_text' => '',
+                                    'next_text' => '',
                                     'total' => $total_pages,
                                     'current' => $current_page
                                 ));
@@ -417,26 +448,40 @@ function prices_options_page_html() {
 
 /**
  * 5. Shortcode Implementation
- * Usage: [price name="XXXXX"] (where name matches 'code' column)
+ * Usage: [price code="XXXXX"]
  */
 function prices_shortcode( $atts ) {
     $atts = shortcode_atts( array(
-        'name' => '',
+        'code' => '',
     ), $atts, 'price' );
 
-    if ( empty( $atts['name'] ) ) {
+    if ( empty( $atts['code'] ) ) {
         return '';
     }
 
     $data = get_option( 'prices_data', array() );
-    $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
     
-    // Find item by 'code'
+    $search_pools = array();
+    // Search Single Prices first
+    $search_pools[] = isset($data['items']) ? $data['items'] : array();
+    // Then Search Course Prices
+    $search_pools[] = isset($data['course_items']) ? $data['course_items'] : array();
+    
+    // Find item
     $found_item = null;
-    foreach ( $items as $item ) {
-        if ( isset($item['code']) && strcasecmp($item['code'], $atts['name']) === 0 ) {
+    foreach ($search_pools as $items) {
+        if (!is_array($items)) continue;
+        
+        foreach ( $items as $item ) {
+            // Check Code against 'code'
+            $matches_code = isset($item['code']) && strcasecmp($item['code'], $atts['code']) === 0;
+
+            if ( !$matches_code ) {
+                continue;
+            }
+
             $found_item = $item;
-            break;
+            break 2;
         }
     }
 
@@ -445,12 +490,8 @@ function prices_shortcode( $atts ) {
     }
 
     // Mapping for display
-    $product_name = isset($found_item['product_master_name']) ? $found_item['product_master_name'] : '';
     $price = isset($found_item['normal_price']) ? $found_item['normal_price'] : '';
 
-    return '<div class="price-item">
-        <div class="price-item-name">' . esc_html($product_name) . '</div>
-        <div class="price-item-price">' . esc_html($price) . '</div>
-    </div>';
+    return esc_html($price);
 }
 add_shortcode( 'price', 'prices_shortcode' );

@@ -1,12 +1,191 @@
+.btn-upload {
+    padding: 5px 15px;
+}
 .wp-list-table-wrapper {
     position: relative;
-    overflow-x: auto;
-    transform: translate(0, 0);
+    overflow-x: hidden;
 }
-.wp-list-table.sticky thead {
-    position: fixed;
-    top: 0;
-    right: 0;
+.wp-list-table {
+    display: flex;
+    flex-direction: column;
     width: 100%;
+    border: 1px solid #ebe6e7;
+}
+.wp-list-table-head {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+.wp-list-table-head.sticky {
+    position: fixed;
+    top: 32px;
+    right: 20px;
+    width: 100%;
+    max-width: calc(100% - 160px - 40px);
     z-index: 99;
+    box-shadow: 0 1px 10px 0 rgba(0,0,0,0.2);
+}
+.wp-list-table-head-item {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex: 1;
+    height: 58px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #4a5565;
+    padding: 19px 18px;
+    background-color: #fbf9fa;
+    box-sizing: border-box;
+}
+.wp-list-table-head-item:last-child {
+    justify-content: flex-end;
+}
+.wp-list-table-body {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-direction: column;
+}
+.wp-list-table-body.sticky {
+    margin-top: 58px;
+}
+.wp-list-table-body-item {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    border-top: 1px solid #ebe6e7;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+.wp-list-table-body-item:nth-child(even) {
+    background-color: #eee;
+}
+.wp-list-table-body-item-cell {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex: 1;
+    font-size: 14px;
+    color: #4a5565;
+    padding: 12px 18px;
+    box-sizing: border-box;
+}
+.wp-list-table-body-item-cell.product-name {
+    color: #101828;
+    font-weight: 700;
+}
+.wp-list-table-body-item-cell.quantity {
+    color: #155724;
+    font-weight: 700;
+}
+.wp-list-table-body-item-cell.price {
+    color: #2271b1;
+    font-weight: 700;
+}
+.wp-list-table-body-item-cell:last-child {
+    justify-content: flex-end;
+}
+.wp-list-table-head-item:first-child,
+.wp-list-table-body-item-cell:first-child {
+    max-width: 12%;
+}
+.wp-list-table-head-item:nth-child(3),
+.wp-list-table-body-item-cell:nth-child(3) {
+    max-width: 12%;
+}
+.wp-list-table-head-item:nth-child(4),
+.wp-list-table-body-item-cell:nth-child(4) {
+    max-width: 6%;
+}
+.wp-list-table-head-item:nth-child(5),
+.wp-list-table-body-item-cell:nth-child(5) {
+    max-width: 6%;
+}
+.wp-list-table-head-item:nth-child(6),
+.wp-list-table-body-item-cell:nth-child(6) {
+    max-width: 7%;
+}
+.wp-list-table-head-item:nth-child(7),
+.wp-list-table-body-item-cell:nth-child(7) {
+    max-width: 9%;
+}
+.wp-list-table-head-item:nth-child(8),
+.wp-list-table-body-item-cell:nth-child(8) {
+    max-width: 16%;
+}
+.wp-list-table-head-item:nth-child(9),
+.wp-list-table-body-item-cell:nth-child(9) {
+    max-width: 7%;
+}
+.wp-list-table-body-item-cell code, 
+.wp-list-table-body-item-cell kbd {
+    padding: 6px 8px 5px;
+    font-size: 13px;
+}
+.tablenav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: auto;
+    margin: 15px 0 10px;
+    padding-top: 0;
+}
+.tablenav.bottom {
+    justify-content: flex-end;
+}
+.tablenav .tablenav-pages {
+    margin-bottom: 0;
+}
+.tablenav-pages .pagination-links {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+}
+.page-numbers {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+    color: #101828;
+    line-height: 1;
+    outline: none;
+    border-radius: 6px;
+    box-shadow: none;
+}
+a.page-numbers {
+    color: #2271b1;
+    text-decoration: none;
+}
+a.page-numbers:focus,
+a.page-numbers:hover {
+    outline: none;
+    box-shadow: none;
+}
+.page-numbers.current {
+    color: #fff;
+    background-color: #135e96;  
+}
+.page-numbers.prev, 
+.page-numbers.next {
+    width: 12px;
+    height: 25px;
+}
+.page-numbers.prev::before, 
+.page-numbers.next::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border: 1px solid #2271b1;
+    transform: rotate(45deg);
+}
+.page-numbers.prev::before {
+    border-width: 0 0 2px 2px;
+}
+.page-numbers.next::before {
+    border-width: 2px 2px 0 0;
 }

@@ -1,5 +1,13 @@
+/** Reset CSS WordPress */
 html, body {
   overflow-x: hidden;
 }
+
+@media (max-width: 600px) {
+  #wpadminbar {
+    position: fixed;
+  }
+}
+/** End Reset CSS WordPress */
 
 /*# sourceMappingURL=main.css.map */

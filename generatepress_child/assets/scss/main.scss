@@ -1,14 +1,21 @@
-$max-viewport-nb: 1920;
-$max-viewport-mb: 767;
-@function get-vw-nb($target) {
-    $vw-context: ($max-viewport-nb * .01) * 1px;
-    @return calc($target / $vw-context) * 1vw;
+$max-viewport-dt: 1920;
+$max-viewport-mb: 768;
+@function get-vw-dt($target) {
+    $vw-context: ($max-viewport-dt * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
 }
-@function get-vw-mb($target-mb) {
-    $vw-context2: ($max-viewport-mb * .01) * 1px;
-    @return calc($target-mb / $vw-context2) * 1vw;
+@function get-vw-mb($target) {
+    $vw-context: ($max-viewport-mb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
 }
 
+/** Reset CSS WordPress */
 html, body {
     overflow-x: hidden;
 }
+@media (max-width: 600px) {
+    #wpadminbar {
+        position: fixed;
+    }
+}
+/** End Reset CSS WordPress */
