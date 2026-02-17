@@ -29,6 +29,21 @@ function prices_get_schema_fields() {
     );
 }
 
+// Helper: Define the exact schema fields
+function course_prices_get_schema_fields() {
+    return array(
+        'code',
+        'course_name',
+        'session',
+        'normal_price',
+        'unit_price',
+        'name', // unit_name
+        'treatment_group_name',
+        'product_master_name',
+        'treatment_by',
+    );
+}
+
 // Helper: Define the head table fields
 function prices_get_head_table() {
     return array(
@@ -48,6 +63,21 @@ function prices_get_head_table() {
         // 'treatment_group_id',
         // 'body_position_id',
         // 'treatment_id'
+    );
+}
+
+// Helper: Define the head table fields for Course Prices
+function course_prices_get_head_table() {
+    return array(
+        'Code',
+        'Course Name',
+        'Session',
+        'Price',
+        'Unit Price',
+        'Unit Name',
+        'Group',
+        'Product Master',
+        'By',
     );
 }
 
@@ -102,10 +132,12 @@ function prices_handle_csv_actions() {
         return;
     }
 
-    $fields = prices_get_schema_fields();
-    
     // Determine Type (single vs course)
     $price_type = isset($_POST['price_type']) ? sanitize_text_field($_POST['price_type']) : 'single';
+    
+    // Select Schema based on type
+    $fields = ($price_type === 'course') ? course_prices_get_schema_fields() : prices_get_schema_fields();
+
     // Map to data keys: 'items' for single, 'course_items' for course
     $data_key = ($price_type === 'course') ? 'course_items' : 'items';
 
@@ -238,26 +270,35 @@ function prices_options_page_html() {
 
     $data = get_option( 'prices_data', array() );
     $all_items = isset($data[$data_key]) && is_array($data[$data_key]) ? $data[$data_key] : array();
-    $fields = prices_get_schema_fields();
-    $head_table = prices_get_head_table();
+    
+    // Select Schema and Head Table based on active tab
+    if ($active_tab === 'course') {
+        $fields = course_prices_get_schema_fields();
+        $head_table = course_prices_get_head_table();
+    } else {
+        $fields = prices_get_schema_fields();
+        $head_table = prices_get_head_table();
+    }
 
     // Filter Logic
-    $body_positions = array();
+    $filter_options = array();
+    $filter_key = ($active_tab === 'course') ? 'product_master_name' : 'body_position_name';
+
     foreach ($all_items as $itm) {
-        if (!empty($itm['body_position_name'])) {
-            $body_positions[] = $itm['body_position_name'];
+        if (!empty($itm[$filter_key])) {
+            $filter_options[] = $itm[$filter_key];
         }
     }
-    $body_positions = array_unique($body_positions);
-    sort($body_positions);
+    $filter_options = array_unique($filter_options);
+    sort($filter_options);
 
     $search_query = isset($_GET['s']) ? trim(sanitize_text_field($_GET['s'])) : '';
-    $filter_pos   = isset($_GET['body_pos']) ? trim(sanitize_text_field($_GET['body_pos'])) : '';
+    $filter_val   = isset($_GET['filter_val']) ? trim(sanitize_text_field($_GET['filter_val'])) : '';
 
-    if ( $search_query || $filter_pos ) {
-        $all_items = array_filter($all_items, function($item) use ($search_query, $filter_pos) {
-            // 1. Filter by Body Position
-            if ( $filter_pos && ( !isset($item['body_position_name']) || $item['body_position_name'] !== $filter_pos ) ) {
+    if ( $search_query || $filter_val ) {
+        $all_items = array_filter($all_items, function($item) use ($search_query, $filter_val, $filter_key) {
+            // 1. Filter by Key (Body Position or Product Master)
+            if ( $filter_val && ( !isset($item[$filter_key]) || $item[$filter_key] !== $filter_val ) ) {
                 return false;
             }
 
@@ -310,6 +351,7 @@ function prices_options_page_html() {
         <div class="card" style="margin-top: 20px; margin-bottom: 20px; padding: 15px 15px 25px; max-width: 100%;">
             <h2 style="margin-top:0;">Manage <?php echo ($active_tab === 'course') ? 'Course' : 'Single'; ?> Prices via CSV</h2>
             <p><strong>Required CSV Headers:</strong> <code><?php echo implode(', ', $fields); ?></code></p>
+            <p><strong>Shortcode Usage:</strong> <code>[price code="XXXXX"]</code> แสดงราคา (Price) สำหรับรหัสรายการนั้นๆ</p>
             
             <div style="display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap;">
                 <!-- Export -->
@@ -349,11 +391,11 @@ function prices_options_page_html() {
                     <input type="hidden" name="page" value="prices-settings" />
                     <input type="hidden" name="tab" value="<?php echo esc_attr($active_tab); ?>" />
                     
-                    <select name="body_pos">
-                        <option value="">-- All Positions --</option>
-                        <?php foreach ($body_positions as $pos): ?>
-                            <option value="<?php echo esc_attr($pos); ?>" <?php selected($filter_pos, $pos); ?>>
-                                <?php echo esc_html($pos); ?>
+                    <select name="filter_val">
+                        <option value="">-- All <?php echo ($active_tab === 'course') ? 'Products & Positions' : 'Positions'; ?> --</option>
+                        <?php foreach ($filter_options as $opt): ?>
+                            <option value="<?php echo esc_attr($opt); ?>" <?php selected($filter_val, $opt); ?>>
+                                <?php echo esc_html($opt); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -362,7 +404,7 @@ function prices_options_page_html() {
                     
                     <button type="submit" class="button">Filter</button>
                     
-                    <?php if ($search_query || $filter_pos): ?>
+                    <?php if ($search_query || $filter_val): ?>
                         <a href="<?php echo admin_url('admin.php?page=prices-settings&tab=' . $active_tab); ?>" class="button">Reset</a>
                     <?php endif; ?>
                 </form>
@@ -393,7 +435,7 @@ function prices_options_page_html() {
                     </div>
 
                     <div class="wp-list-table-wrapper">
-                        <div class="wp-list-table">
+                        <div class="wp-list-table <?php echo ($active_tab === 'course') ? 'wp-list-table-course' : 'wp-list-table-single'; ?>">
                             <div class="wp-list-table-head">
                                 <?php foreach ($head_table as $head): ?>
                                     <div class="wp-list-table-head-item"><?php echo esc_html($head); ?></div>
@@ -402,17 +444,19 @@ function prices_options_page_html() {
                             <div class="wp-list-table-body">
                                 <?php foreach ($items as $item): ?>
                                     <div class="wp-list-table-body-item">
-                                        <?php foreach ($fields as $field): ?>
+                                        <?php foreach ($fields as $field): 
+                                            $val = isset($item[$field]) ? $item[$field] : '';
+                                        ?>
                                             <?php if ($field === 'code'): ?>
-                                                <div class="wp-list-table-body-item-cell"><code><?php echo esc_html($item[$field]); ?></code></div>
-                                            <?php elseif ($field === 'product_master_name'): ?>
-                                                <div class="wp-list-table-body-item-cell product-name"><?php echo esc_html($item[$field]); ?></div>
-                                            <?php elseif ($field === 'quantity'): ?>
-                                                <div class="wp-list-table-body-item-cell quantity"><?php echo esc_html($item[$field]); ?></div>
+                                                <div class="wp-list-table-body-item-cell"><code><?php echo esc_html($val); ?></code></div>
+                                            <?php elseif ($field === 'product_master_name' || $field === 'course_name'): ?>
+                                                <div class="wp-list-table-body-item-cell product-name"><?php echo esc_html($val); ?></div>
+                                            <?php elseif ($field === 'quantity' || $field === 'session'): ?>
+                                                <div class="wp-list-table-body-item-cell quantity"><?php echo esc_html($val); ?></div>
                                             <?php elseif ($field === 'normal_price'): ?>
-                                                <div class="wp-list-table-body-item-cell price"><?php echo esc_html($item[$field]); ?></div>
+                                                <div class="wp-list-table-body-item-cell price"><?php echo esc_html($val); ?></div>
                                             <?php else: ?>
-                                                <div class="wp-list-table-body-item-cell"><?php echo esc_html($item[$field]); ?></div>
+                                                <div class="wp-list-table-body-item-cell"><?php echo esc_html($val); ?></div>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
                                     </div>

@@ -4,6 +4,7 @@ jQuery(document).ready(function($) {
     var itemsPerPage = 18;
     var currentPage = 1;
     var currentFilter = '';
+    var currentSearch = '';
     var visibleRows = [];
 
     // --- Select2 Initialization ---
@@ -81,12 +82,22 @@ jQuery(document).ready(function($) {
         filterRows();
     });
 
+    // Search Change
+    $('#product-image-search').on('input', function() {
+        currentSearch = $(this).val().toLowerCase();
+        currentPage = 1; // Reset to first page
+        filterRows();
+    });
+
     // Update Row Category on Select Change
     $(document).on('change', '.category-select', function() {
         var row = $(this).closest('.dt-repeater-row');
-        row.attr('data-category', $(this).val());
-        // Optional: Re-filter if current filter is active?
-        // Usually better not to hide row immediately while editing, so we leave it visible until manual refresh or filter change.
+        var val = $(this).val();
+        // Handle multiple select array
+        if (Array.isArray(val)) {
+            val = val.join(',');
+        }
+        row.attr('data-category', val);
     });
 
     // Pagination Click
@@ -103,8 +114,26 @@ jQuery(document).ready(function($) {
         allRows.each(function() {
             var row = $(this);
             var cat = row.attr('data-category');
+            var name = row.find('input[name*="[name]"]').val().toLowerCase();
             
-            if (currentFilter === '' || cat === currentFilter) {
+            var matchCategory = false;
+            if (currentFilter === '') {
+                matchCategory = true;
+            } else {
+                var categories = cat ? cat.split(',') : [];
+                if (categories.includes(currentFilter)) {
+                    matchCategory = true;
+                }
+            }
+
+            var matchSearch = true;
+            if (currentSearch !== '') {
+                if (name.indexOf(currentSearch) === -1) {
+                    matchSearch = false;
+                }
+            }
+
+            if (matchCategory && matchSearch) {
                 visibleRows.push(row);
             } else {
                 row.hide();

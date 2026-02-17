@@ -86,7 +86,10 @@ function cta_footer_options_page_html() {
             
             <!-- TH Section -->
             <div class="cta-footer">
-                <h2 style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">Button CTA (TH)</h2>
+                <div style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">
+                    <h2 style="margin: 0;">Button CTA (TH)</h2>
+                    <p style="margin: 10px 0 0;"><strong>Shortcode Usage:</strong> <code>[cta_footer_th]</code></p>
+                </div>
                 <div style="padding: 15px;">
                     <div class="cta-list-container" data-lang="th">
                         <div class="cta-list">
@@ -105,7 +108,10 @@ function cta_footer_options_page_html() {
 
             <!-- EN Section -->
             <div class="cta-footer">
-                <h2 style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">Button CTA (EN)</h2>
+                <div style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">
+                    <h2 style="margin: 0;">Button CTA (EN)</h2>
+                    <p style="margin: 10px 0 0;"><strong>Shortcode Usage:</strong> <code>[cta_footer_en]</code></p>
+                </div>
                 <div style="padding: 15px;">
                     <div class="cta-list-container" data-lang="en">
                         <div class="cta-list">
@@ -124,7 +130,10 @@ function cta_footer_options_page_html() {
 
             <!-- CN Section -->
             <div class="cta-footer">
-                <h2 style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">Button CTA (CN)</h2>
+                <div style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">
+                    <h2 style="margin: 0;">Button CTA (CN)</h2>
+                    <p style="margin: 10px 0 0;"><strong>Shortcode Usage:</strong> <code>[cta_footer_cn]</code></p>
+                </div>
                 <div style="padding: 15px;">
                     <div class="cta-list-container" data-lang="cn">
                         <div class="cta-list">

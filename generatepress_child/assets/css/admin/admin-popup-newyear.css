@@ -15,12 +15,21 @@
     box-sizing: border-box;
 }
 
-.popup-section h2 {
+.popup-section .popup-heading {
     margin: 0;
     padding: 15px;
     border-bottom: 1px solid #eee;
     background: #f9f9f9;
+}
+
+.popup-section h2 {
+    font-size: 16px;
+    margin: 0;
+}
+
+.popup-section .popup-heading p {
     font-size: 14px;
+    margin: 8px 0 0;
 }
 
 .popup-fields {

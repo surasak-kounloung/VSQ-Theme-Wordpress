@@ -47,12 +47,24 @@ function branch_render_meta_box( $post ) {
 
     // Get Services
     $branch_services = get_post_meta( $post->ID, '_branch_services', true );
+    
+    // Fix: Handle potential double serialization or string format from sync
+    if ( is_string( $branch_services ) ) {
+        $branch_services = maybe_unserialize( $branch_services );
+    }
+    
     if ( ! is_array( $branch_services ) ) {
         $branch_services = array();
     }
 
     // Get Opening Time
     $branch_opening_time = get_post_meta( $post->ID, '_branch_opening_time', true );
+    
+    // Fix: Handle potential double serialization or string format from sync
+    if ( is_string( $branch_opening_time ) ) {
+        $branch_opening_time = maybe_unserialize( $branch_opening_time );
+    }
+    
     if ( ! is_array( $branch_opening_time ) ) {
         $branch_opening_time = array();
     }
@@ -70,7 +82,13 @@ function branch_render_meta_box( $post ) {
                         <div class="admin-image-preview thumbnail-image-preview">
                             <?php 
                             if ( ! empty( $branch_thumbnail ) ) {
-                                $url = wp_get_attachment_image_url( $branch_thumbnail, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $branch_thumbnail ) ) {
+                                    $url = wp_get_attachment_image_url( $branch_thumbnail, 'full' );
+                                } else {
+                                    $url = $branch_thumbnail;
+                                }
+
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_thumbnail ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
@@ -94,7 +112,13 @@ function branch_render_meta_box( $post ) {
                         <div class="admin-image-preview thumbnail-name-image-preview">
                             <?php 
                             if ( ! empty( $branch_thumbnail_name ) ) {
-                                $url = wp_get_attachment_image_url( $branch_thumbnail_name, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $branch_thumbnail_name ) ) {
+                                    $url = wp_get_attachment_image_url( $branch_thumbnail_name, 'full' );
+                                } else {
+                                    $url = $branch_thumbnail_name;
+                                }
+                                
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_thumbnail_name ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
@@ -151,7 +175,13 @@ function branch_render_meta_box( $post ) {
                         <div class="admin-image-preview image-360-preview">
                             <?php 
                             if ( ! empty( $branch_image_360 ) ) {
-                                $url = wp_get_attachment_image_url( $branch_image_360, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $branch_image_360 ) ) {
+                                    $url = wp_get_attachment_image_url( $branch_image_360, 'full' );
+                                } else {
+                                    $url = $branch_image_360;
+                                }
+                                
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_image_360 ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 500px; width: auto;">';
@@ -221,7 +251,13 @@ function branch_render_meta_box( $post ) {
                         <div class="admin-image-preview location-image-preview">
                             <?php 
                             if ( ! empty( $branch_location_image ) ) {
-                                $url = wp_get_attachment_image_url( $branch_location_image, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $branch_location_image ) ) {
+                                    $url = wp_get_attachment_image_url( $branch_location_image, 'full' );
+                                } else {
+                                    $url = $branch_location_image;
+                                }
+                                
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_location_image ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 350px; width: auto;">';
@@ -251,11 +287,15 @@ function branch_render_meta_box( $post ) {
                                 <?php 
                                 if ( ! empty( $branch_opening_time ) ) {
                                     foreach ( $branch_opening_time as $index => $row ) {
+                                        // Fix: Cast to array to handle object from JSON
+                                        $row = (array) $row;
+                                        $day = isset( $row['day'] ) ? $row['day'] : '';
+                                        $time = isset( $row['time'] ) ? $row['time'] : '';
                                         ?>
                                         <tr class="admin-table-row">
                                             <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][day]" value="<?php echo esc_attr( $row['day'] ); ?>" class="widefat"></td>
-                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][time]" value="<?php echo esc_attr( $row['time'] ); ?>" class="widefat"></td>
+                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][day]" value="<?php echo esc_attr( $day ); ?>" class="widefat"></td>
+                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][time]" value="<?php echo esc_attr( $time ); ?>" class="widefat"></td>
                                             <td><span class="remove-table-row dashicons dashicons-no-alt remove-opening-time-row"></span></td>
                                         </tr>
                                         <?php
@@ -329,10 +369,13 @@ function branch_render_meta_box( $post ) {
                                 <?php 
                                 if ( ! empty( $branch_services ) ) {
                                     foreach ( $branch_services as $index => $service ) {
+                                        // Fix: Cast to array to handle object from JSON
+                                        $service = (array) $service;
+                                        $service_name = isset( $service['name'] ) ? $service['name'] : '';
                                         ?>
                                         <tr class="admin-table-row">
                                             <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                            <td><input type="text" name="branch_services[<?php echo $index; ?>][name]" value="<?php echo esc_attr( $service['name'] ?? '' ); ?>" class="widefat"></td>
+                                            <td><input type="text" name="branch_services[<?php echo $index; ?>][name]" value="<?php echo esc_attr( $service_name ); ?>" class="widefat"></td>
                                             <td><span class="remove-table-row dashicons dashicons-no-alt remove-services-row"></span></td>
                                         </tr>
                                         <?php

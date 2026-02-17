@@ -193,6 +193,7 @@ function product_image_options_page_html() {
                                                     <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
                                                 <?php endforeach; ?>
                                             </select>
+                                            <input type="text" id="product-image-search" class="search-field" placeholder="Search by Name...">
                                         </div>
                                         <div class="tablenav-pages">
                                             <span class="displaying-num"><span id="total-items">0</span> items</span>
@@ -206,7 +207,6 @@ function product_image_options_page_html() {
                                                 <a href="#" class="last-page button disabled">&raquo;</a>
                                             </span>
                                         </div>
-                                        <br class="clear">
                                     </div>
 
                                     <div class="dt-repeater-container">
@@ -251,7 +251,12 @@ function product_image_options_page_html() {
 // Helper to render a single row
 function product_image_render_row( $index, $data ) {
     // Extract values
-    $category = isset( $data['category'] ) ? $data['category'] : '';
+    $category = isset( $data['category'] ) ? $data['category'] : array();
+    // Ensure category is an array (backward compatibility)
+    if ( ! is_array( $category ) ) {
+        $category = array_filter( array( $category ) );
+    }
+    $name = isset( $data['name'] ) ? $data['name'] : '';
     $shortcode_name = isset( $data['shortcode_name'] ) ? $data['shortcode_name'] : '';
     $image_url = isset( $data['image_url'] ) ? $data['image_url'] : '';
     $image_id = isset( $data['image_id'] ) ? $data['image_id'] : '';
@@ -259,7 +264,7 @@ function product_image_render_row( $index, $data ) {
     $categories = product_image_get_categories();
     
     ?>
-    <div class="dt-repeater-row" data-category="<?php echo esc_attr($category); ?>">
+    <div class="dt-repeater-row" data-category="<?php echo esc_attr( implode( ',', $category ) ); ?>">
         <div class="dt-row-header">
             <span class="dt-row-title">Image Item</span>
             <div class="dt-row-actions">
@@ -283,13 +288,19 @@ function product_image_render_row( $index, $data ) {
                     </div>
                 </div>
 
-                <!-- Category -->
+                <!-- Name -->
                 <div class="dt-field-col">
+                    <label>Name</label>
+                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][name]" value="<?php echo esc_attr( $name ); ?>" placeholder="">
+                </div>
+
+                <!-- Category -->
+                <div class="dt-field-col dt-field-select">
                     <label>Category</label>
-                    <select name="product_images_data[items][<?php echo $index; ?>][category]" class="category-select">
+                    <select name="product_images_data[items][<?php echo $index; ?>][category][]" class="category-select" multiple="multiple">
                         <option value="">Select Category</option>
                         <?php foreach($categories as $key => $label): ?>
-                            <option value="<?php echo esc_attr($key); ?>" <?php selected($category, $key); ?>><?php echo esc_html($label); ?></option>
+                            <option value="<?php echo esc_attr($key); ?>" <?php echo in_array( $key, $category ) ? 'selected="selected"' : ''; ?>><?php echo esc_html($label); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -298,7 +309,7 @@ function product_image_render_row( $index, $data ) {
                 <div class="dt-field-col">
                     <label>Shortcode Name (Key)</label>
                     <input type="text" name="product_images_data[items][<?php echo $index; ?>][shortcode_name]" value="<?php echo esc_attr( $shortcode_name ); ?>" placeholder="e.g. filler_under_eye">
-                    <p class="description">Shortcode: [product_img name="<?php echo esc_attr( $shortcode_name ); ?>" alt="" class="" caption=""]</p>
+                    <p class="description">Shortcode: <code>[product_img name="<?php echo esc_attr( $shortcode_name ); ?>" alt="" class="" caption=""]</code></p>
                 </div>
             </div>
         </div>

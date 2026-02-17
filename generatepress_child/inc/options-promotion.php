@@ -105,6 +105,22 @@ function promotion_options_page_html() {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Shortcode Usage Box -->
+                        <div class="postbox">
+                            <div class="postbox-header">
+                                <h2 class="heading">Shortcode Usage</h2>
+                            </div>
+                            <div class="inside">
+                                <div class="postbox-code">
+                                    <code>[promotion_list]</code>
+                                </div>
+                                <div class="postbox-code-description">
+                                    <p>แสดงรายการโปรโมชั่นทั้งหมด</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Main Content (Left Column) -->

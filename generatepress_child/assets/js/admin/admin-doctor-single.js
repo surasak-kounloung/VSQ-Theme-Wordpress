@@ -372,7 +372,16 @@ jQuery(document).ready(function($) {
         var html = '<tr class="doc-schedule-row">';
         html += '<td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>';
         html += '<td><input type="text" name="doctor_schedule[' + rowCount + '][date]" value="" class="widefat"></td>';
-        html += '<td><input type="text" name="doctor_schedule[' + rowCount + '][branch]" value="" class="widefat"></td>';
+        
+        // Branch Select
+        html += '<td><select name="doctor_schedule[' + rowCount + '][branch]" class="widefat">';
+        if (typeof doctorAdminParams !== 'undefined' && doctorAdminParams.branchOptions) {
+            html += doctorAdminParams.branchOptions;
+        } else {
+            html += '<option value="">-- Select Branch --</option>';
+        }
+        html += '</select></td>';
+
         html += '<td><span class="remove-schedule-row dashicons dashicons-no-alt"></span></td>';
         html += '</tr>';
         scheduleBody.append(html);

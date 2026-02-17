@@ -84,19 +84,28 @@ function popup_newyear_options_page_html() {
             <div class="popup-newyear-container">
                 <!-- TH Section -->
                 <div class="popup-section">
-                    <h2>Popup (TH)</h2>
+                    <div class="popup-heading">
+                        <h2>Popup (TH)</h2>
+                        <p><strong>Shortcode Usage:</strong> <code>[popup_newyear_th]</code></p>
+                    </div>
                     <?php popup_newyear_render_fields( $data_th, 'th' ); ?>
                 </div>
 
                 <!-- EN Section -->
                 <div class="popup-section">
-                    <h2>Popup (EN)</h2>
+                    <div class="popup-heading">
+                        <h2>Popup (EN)</h2>
+                        <p><strong>Shortcode Usage:</strong> <code>[popup_newyear_en]</code></p>
+                    </div>
                     <?php popup_newyear_render_fields( $data_en, 'en' ); ?>
                 </div>
 
                 <!-- CN Section -->
                 <div class="popup-section">
-                    <h2>Popup (CN)</h2>
+                    <div class="popup-heading">
+                        <h2>Popup (CN)</h2>
+                        <p><strong>Shortcode Usage:</strong> <code>[popup_newyear_cn]</code></p>
+                    </div>
                     <?php popup_newyear_render_fields( $data_cn, 'cn' ); ?>
                 </div>
             </div>

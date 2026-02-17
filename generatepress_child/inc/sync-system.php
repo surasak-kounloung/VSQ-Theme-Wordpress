@@ -254,18 +254,117 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender' ) {
     function vsq_sync_enrich_payload_recursive( $data ) {
         if ( is_array( $data ) ) {
             $new_data = array();
+            
+            // Define keys for Doctors
+            $doctor_single_keys = array('_doctor_thumbnail', '_doctor_thumbnail_name', '_doctor_image');
+            $doctor_gallery_keys = array('_doctor_certificate_gallery', '_doctor_training_gallery');
+            
+            // Define keys for Branches
+            $branch_single_keys = array('_branch_thumbnail', '_branch_thumbnail_name', '_branch_image_360', '_branch_location_image');
+
+            // Define keys for Case Reviews
+            $case_review_single_keys = array('_case_review_thumbnail', '_case_review_image_before_after', '_case_review_image_before', '_case_review_image_after');
+
+            // Merge single keys
+            $all_single_keys = array_merge($doctor_single_keys, $branch_single_keys, $case_review_single_keys);
+
             foreach ( $data as $key => $value ) {
                 // Copy original value
                 $new_data[$key] = $value;
 
+                // --- NEW: Handle Doctor Schedule (Inject Branch Slug) ---
+                if ( $key === '_doctor_schedule' && isset( $value[0] ) ) {
+                    $schedule = maybe_unserialize( $value[0] );
+                    if ( is_array( $schedule ) ) {
+                        $modified = false;
+                        foreach ( $schedule as $k => $item ) {
+                            if ( isset( $item['branch'] ) && is_numeric( $item['branch'] ) ) {
+                                $branch_post = get_post( $item['branch'] );
+                                if ( $branch_post ) {
+                                    $schedule[$k]['branch_slug'] = $branch_post->post_name;
+                                    $modified = true;
+                                }
+                            }
+                        }
+                        if ( $modified ) {
+                            // Replace serialized string with array for JSON transport
+                            $new_data[$key] = array( $schedule );
+                            // Skip default recursion for this key
+                            continue;
+                        }
+                    }
+                }
+                // --------------------------------------------------------
+
+                // --- NEW: Handle Doctor Case Reviews (Convert IDs to Slugs) ---
+                if ( $key === '_doctor_case_reviews' && isset( $value[0] ) ) {
+                    $ids_str = $value[0];
+                    if ( ! empty( $ids_str ) ) {
+                        $ids = explode( ',', $ids_str );
+                        $slugs = array();
+                        foreach ( $ids as $id ) {
+                            if ( is_numeric( $id ) ) {
+                                $post_obj = get_post( $id );
+                                if ( $post_obj && $post_obj->post_type === 'page_case_review' ) {
+                                    $slugs[] = $post_obj->post_name;
+                                }
+                            }
+                        }
+                        if ( ! empty( $slugs ) ) {
+                            $new_data['_doctor_case_reviews_slugs'] = array( implode( ',', $slugs ) );
+                        }
+                    }
+                }
+                // --------------------------------------------------------------
+
                 if ( is_array( $value ) ) {
+                    // Check if this is a meta field (value is array) holding an image ID
+                    if ( in_array( $key, $all_single_keys ) && isset( $value[0] ) && is_numeric( $value[0] ) && $value[0] > 0 ) {
+                        $url = wp_get_attachment_url( $value[0] );
+                        if ( $url ) {
+                            $new_data[$key . '_source_url'] = $url;
+                        }
+                    }
+                    
+                    // Check if this is a meta field holding a gallery string
+                    if ( in_array( $key, $doctor_gallery_keys ) && isset( $value[0] ) && ! empty( $value[0] ) ) {
+                        $ids = explode( ',', $value[0] );
+                        $urls = array();
+                        foreach ( $ids as $id ) {
+                            if ( is_numeric( $id ) ) {
+                                $u = wp_get_attachment_url( $id );
+                                if ( $u ) $urls[] = $u;
+                            }
+                        }
+                        if ( ! empty( $urls ) ) {
+                            $new_data[$key . '_source_url'] = implode( ',', $urls );
+                        }
+                    }
+
                     $new_data[$key] = vsq_sync_enrich_payload_recursive( $value );
                 } else {
-                    // Check for Image IDs (keys ending in _id or strictly image_id)
-                    if ( ( substr( $key, -3 ) === '_id' || $key === 'image_id' ) && is_numeric( $value ) && $value > 0 ) {
+                    // Scalar Value
+                    $is_image_key = ( substr( $key, -3 ) === '_id' || $key === 'image_id' || in_array( $key, $all_single_keys ) );
+                    
+                    if ( $is_image_key && is_numeric( $value ) && $value > 0 ) {
                         $url = wp_get_attachment_url( $value );
                         if ( $url ) {
                             $new_data[$key . '_source_url'] = $url;
+                        }
+                    }
+
+                    // Check for Gallery keys as Scalar
+                    if ( in_array( $key, $doctor_gallery_keys ) && ! empty( $value ) ) {
+                        $ids = explode( ',', $value );
+                        $urls = array();
+                        foreach ( $ids as $id ) {
+                            if ( is_numeric( $id ) ) {
+                                $u = wp_get_attachment_url( $id );
+                                if ( $u ) $urls[] = $u;
+                            }
+                        }
+                        if ( ! empty( $urls ) ) {
+                            $new_data[$key . '_source_url'] = implode( ',', $urls );
                         }
                     }
                 }
@@ -274,6 +373,137 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender' ) {
         }
         return $data;
     }
+
+    // Hook for Manual Sync All Doctors
+    add_action( 'admin_post_vsq_sync_all_doctors', 'vsq_sync_all_doctors_handler' );
+
+    function vsq_sync_all_doctors_handler() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Unauthorized' );
+        }
+        
+        check_admin_referer( 'vsq_sync_all_doctors_action' );
+
+        // Get all page_doctor posts
+        $args = array(
+            'post_type'      => 'page_doctor',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        );
+        $doctors = get_posts( $args );
+
+        $count = 0;
+        foreach ( $doctors as $doctor ) {
+            // Re-use existing sync logic
+            vsq_sync_on_save_post( $doctor->ID, $doctor, true );
+            $count++;
+        }
+
+        // Redirect back
+        $redirect_url = add_query_arg( 
+            array( 
+                'post_type' => 'page_doctor', 
+                'vsq_synced' => $count 
+            ), 
+            admin_url( 'edit.php' ) 
+        );
+        wp_redirect( $redirect_url );
+        exit;
+    }
+
+    // Hook for Manual Sync All Branches
+    add_action( 'admin_post_vsq_sync_all_branches', 'vsq_sync_all_branches_handler' );
+
+    function vsq_sync_all_branches_handler() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Unauthorized' );
+        }
+        
+        check_admin_referer( 'vsq_sync_all_branches_action' );
+
+        // Get all page_branch posts
+        $args = array(
+            'post_type'      => 'page_branch',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        );
+        $branches = get_posts( $args );
+
+        $count = 0;
+        foreach ( $branches as $branch ) {
+            // Re-use existing sync logic
+            vsq_sync_on_save_post( $branch->ID, $branch, true );
+            $count++;
+        }
+
+        // Redirect back
+        $redirect_url = add_query_arg( 
+            array( 
+                'post_type' => 'page_branch', 
+                'vsq_synced' => $count 
+            ), 
+            admin_url( 'edit.php' ) 
+        );
+        wp_redirect( $redirect_url );
+        exit;
+    }
+
+    // Hook for Manual Sync All Case Reviews
+    add_action( 'admin_post_vsq_sync_all_case_reviews', 'vsq_sync_all_case_reviews_handler' );
+
+    function vsq_sync_all_case_reviews_handler() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Unauthorized' );
+        }
+        
+        check_admin_referer( 'vsq_sync_all_case_reviews_action' );
+
+        // Get all page_case_review posts
+        $args = array(
+            'post_type'      => 'page_case_review',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        );
+        $reviews = get_posts( $args );
+
+        $count = 0;
+        foreach ( $reviews as $review ) {
+            // Re-use existing sync logic
+            vsq_sync_on_save_post( $review->ID, $review, true );
+            $count++;
+        }
+
+        // Redirect back
+        $redirect_url = add_query_arg( 
+            array( 
+                'post_type' => 'page_case_review', 
+                'vsq_synced' => $count 
+            ), 
+            admin_url( 'edit.php' ) 
+        );
+        wp_redirect( $redirect_url );
+        exit;
+    }
+
+    // Admin Notice
+    add_action( 'admin_notices', 'vsq_sync_admin_notice' );
+    function vsq_sync_admin_notice() {
+        if ( isset( $_GET['vsq_synced'] ) ) {
+            $count = intval( $_GET['vsq_synced'] );
+            $post_type_label = 'รายการ';
+            if ( isset( $_GET['post_type'] ) ) {
+                if ( $_GET['post_type'] === 'page_doctor' ) $post_type_label = 'แพทย์';
+                if ( $_GET['post_type'] === 'page_branch' ) $post_type_label = 'สาขา';
+                if ( $_GET['post_type'] === 'page_case_review' ) $post_type_label = 'รีวิว';
+            }
+            ?>
+            <div class="notice notice-success is-dismissible">
+                <p><?php echo sprintf( 'ส่งข้อมูล%sจำนวน %d รายการ ไปยังเว็บลูกข่ายเรียบร้อยแล้ว', $post_type_label, $count ); ?></p>
+            </div>
+            <?php
+        }
+    }
+
 }
 
 /**
@@ -365,7 +595,88 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'receiver' ) {
                 if ( ! is_wp_error( $post_id ) ) {
                     // Update Meta
                     if ( isset( $data['meta'] ) && is_array( $data['meta'] ) ) {
+                        // Define keys that should be single values (images)
+                        $single_image_keys = array( 
+                            '_doctor_thumbnail', '_doctor_thumbnail_name', '_doctor_image',
+                            '_branch_thumbnail', '_branch_thumbnail_name', '_branch_image_360', '_branch_location_image',
+                            '_case_review_thumbnail', '_case_review_image_before_after', '_case_review_image_before', '_case_review_image_after'
+                        );
+
                         foreach ( $data['meta'] as $key => $val ) {
+                            
+                            // Skip helper keys ending in _slugs
+                            if ( substr( $key, -6 ) === '_slugs' ) {
+                                continue;
+                            }
+
+                            // --- NEW: Handle Doctor Schedule (Resolve Branch ID) ---
+                            if ( $key === '_doctor_schedule' && isset( $val[0] ) && is_array( $val[0] ) ) {
+                                $schedule = $val[0];
+                                $modified = false;
+                                foreach ( $schedule as $k => $item ) {
+                                    if ( ! empty( $item['branch_slug'] ) ) {
+                                        // Find ID by Slug
+                                        $args = array(
+                                            'name'        => $item['branch_slug'],
+                                            'post_type'   => 'page_branch',
+                                            'post_status' => 'any',
+                                            'numberposts' => 1,
+                                            'fields'      => 'ids'
+                                        );
+                                        $found_branch = get_posts($args);
+                                        if ( ! empty( $found_branch ) ) {
+                                            $schedule[$k]['branch'] = $found_branch[0];
+                                            $modified = true;
+                                        }
+                                        // Remove slug to keep DB clean
+                                        unset( $schedule[$k]['branch_slug'] );
+                                    }
+                                }
+                                if ( $modified ) {
+                                    $val = array( $schedule );
+                                }
+                            }
+                            // -------------------------------------------------------
+
+                            // --- NEW: Handle Doctor Case Reviews (Resolve Slugs to IDs) ---
+                            if ( $key === '_doctor_case_reviews' && isset( $data['meta']['_doctor_case_reviews_slugs'][0] ) ) {
+                                $slugs_str = $data['meta']['_doctor_case_reviews_slugs'][0];
+                                if ( ! empty( $slugs_str ) ) {
+                                    $slugs = explode( ',', $slugs_str );
+                                    $local_ids = array();
+                                    
+                                    foreach ( $slugs as $slug ) {
+                                        $args = array(
+                                            'name'        => $slug,
+                                            'post_type'   => 'page_case_review',
+                                            'post_status' => 'any',
+                                            'numberposts' => 1,
+                                            'fields'      => 'ids'
+                                        );
+                                        $found_posts = get_posts( $args );
+                                        if ( ! empty( $found_posts ) ) {
+                                            $local_ids[] = $found_posts[0];
+                                        }
+                                    }
+                                    
+                                    // Replace value with local IDs string
+                                    if ( ! empty( $local_ids ) ) {
+                                        $val = array( implode( ',', $local_ids ) );
+                                    }
+                                }
+                            }
+                            // --------------------------------------------------------------
+
+                            // Special handling for Image Keys to ensure clean update
+                            if ( in_array( $key, $single_image_keys ) ) {
+                                // If val is not an array, it means it was replaced by a new ID (int/string)
+                                if ( ! is_array( $val ) ) {
+                                    delete_post_meta( $post_id, $key );
+                                    update_post_meta( $post_id, $key, $val );
+                                    continue; 
+                                }
+                            }
+
                             // $val is array because get_post_meta returns array
                             if ( is_array( $val ) && count( $val ) === 1 ) {
                                 update_post_meta( $post_id, $key, $val[0] );
@@ -404,12 +715,17 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'receiver' ) {
             foreach ( $data as $key => &$value ) {
                 if ( is_array( $value ) ) {
                     // Special Case: Promotion Slides (id + image) in child array
-                    if ( isset( $value['id'] ) && isset( $value['image'] ) && filter_var( $value['image'], FILTER_VALIDATE_URL ) ) {
-                        vsq_sync_log( "Found Promotion Slide Image: " . $value['image'] );
-                        $new_id = vsq_sync_sideload_image( $value['image'] );
-                        if ( $new_id ) {
-                            $value['id'] = $new_id;
-                            $value['image'] = wp_get_attachment_url( $new_id );
+                    if ( isset( $value['id'] ) && isset( $value['image'] ) ) {
+                        // Encode URL before validating to support Thai characters
+                        $check_url = vsq_sync_encode_url( $value['image'] );
+                        
+                        if ( filter_var( $check_url, FILTER_VALIDATE_URL ) ) {
+                            vsq_sync_log( "Found Promotion Slide Image: " . $value['image'] );
+                            $new_id = vsq_sync_sideload_image( $value['image'] );
+                            if ( $new_id ) {
+                                $value['id'] = $new_id;
+                                $value['image'] = wp_get_attachment_url( $new_id );
+                            }
                         }
                     }
                     // Recurse
@@ -435,27 +751,49 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'receiver' ) {
                 $target_key = substr( $key, 0, -11 ); // remove _source_url
                 
                 if ( isset( $data[$target_key] ) ) {
-                    $image_url = $data[$key];
-                    if ( $image_url ) {
-                        vsq_sync_log( "Attempting sideload for key {$target_key}: {$image_url}" );
-                        $new_id = vsq_sync_sideload_image( $image_url );
-                        if ( $new_id ) {
-                            vsq_sync_log( "Sideload success. New ID: {$new_id}" );
-                            // Update ID
-                            $data[$target_key] = $new_id;
-                            
-                            // Also Update Neighbor URL field if exists (Naming Convention Check)
-                            $target_key_url = str_replace( '_id', '', $target_key ); 
-                            if ( isset( $data[$target_key_url] ) ) {
-                                $data[$target_key_url] = wp_get_attachment_url( $new_id );
-                            }
-                            
-                            // Special case for image_id -> image_url pair
-                            if ( $target_key === 'image_id' && isset( $data['image_url'] ) ) {
-                                $data['image_url'] = wp_get_attachment_url( $new_id );
-                            }
+                    $image_url_val = $data[$key]; // Value can be Single URL or Comma-separated
+                    
+                    if ( $image_url_val ) {
+                        // Check for Gallery (Multiple URLs separated by comma)
+                        if ( strpos( $image_url_val, ',' ) !== false ) {
+                             $urls = explode( ',', $image_url_val );
+                             $new_ids = array();
+                             
+                             foreach ( $urls as $u ) {
+                                 $u = trim( $u );
+                                 if ( $u ) {
+                                     $nid = vsq_sync_sideload_image( $u );
+                                     if ( $nid ) $new_ids[] = $nid;
+                                 }
+                             }
+                             
+                             if ( ! empty( $new_ids ) ) {
+                                 $data[$target_key] = implode( ',', $new_ids );
+                                 vsq_sync_log( "Gallery synced for {$target_key}. IDs: " . implode(',', $new_ids) );
+                             }
+                             
                         } else {
-                            vsq_sync_log( "Sideload failed for {$image_url}" );
+                            // Single Image
+                            vsq_sync_log( "Attempting sideload for key {$target_key}: {$image_url_val}" );
+                            $new_id = vsq_sync_sideload_image( $image_url_val );
+                            if ( $new_id ) {
+                                vsq_sync_log( "Sideload success. New ID: {$new_id}" );
+                                // Update ID
+                                $data[$target_key] = $new_id;
+                                
+                                // Also Update Neighbor URL field if exists (Naming Convention Check)
+                                $target_key_url = str_replace( '_id', '', $target_key ); 
+                                if ( isset( $data[$target_key_url] ) ) {
+                                    $data[$target_key_url] = wp_get_attachment_url( $new_id );
+                                }
+                                
+                                // Special case for image_id -> image_url pair
+                                if ( $target_key === 'image_id' && isset( $data['image_url'] ) ) {
+                                    $data['image_url'] = wp_get_attachment_url( $new_id );
+                                }
+                            } else {
+                                vsq_sync_log( "Sideload failed for {$image_url_val}" );
+                            }
                         }
                     }
                 }

@@ -119,6 +119,30 @@
 .wp-list-table-body-item-cell:nth-child(9) {
     max-width: 7%;
 }
+.wp-list-table-course .wp-list-table-head-item:nth-child(3),
+.wp-list-table-course .wp-list-table-body-item-cell:nth-child(3) {
+    max-width: 7%;
+}
+.wp-list-table-course .wp-list-table-head-item:nth-child(4),
+.wp-list-table-course .wp-list-table-body-item-cell:nth-child(4) {
+    max-width: 11%;
+}
+.wp-list-table-course .wp-list-table-head-item:nth-child(5),
+.wp-list-table-course .wp-list-table-body-item-cell:nth-child(5) {
+    max-width: 10%;
+}
+.wp-list-table-course .wp-list-table-head-item:nth-child(6),
+.wp-list-table-course .wp-list-table-body-item-cell:nth-child(6) {
+    max-width: 9%;
+}
+.wp-list-table-course .wp-list-table-head-item:nth-child(7),
+.wp-list-table-course .wp-list-table-body-item-cell:nth-child(7) {
+    max-width: 12%;
+}
+.wp-list-table-course .wp-list-table-head-item:nth-child(8),
+.wp-list-table-course .wp-list-table-body-item-cell:nth-child(8) {
+    max-width: 12%;
+}
 .wp-list-table-body-item-cell code, 
 .wp-list-table-body-item-cell kbd {
     padding: 6px 8px 5px;

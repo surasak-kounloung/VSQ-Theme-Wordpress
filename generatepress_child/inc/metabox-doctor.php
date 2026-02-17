@@ -42,9 +42,24 @@ function doctor_render_meta_box( $post ) {
     
     // Get Schedule Data
     $schedule = get_post_meta( $post->ID, '_doctor_schedule', true );
+    
+    // Fix: Handle potential double serialization or string format from sync
+    if ( is_string( $schedule ) ) {
+        $schedule = maybe_unserialize( $schedule );
+    }
+    
     if ( ! is_array( $schedule ) ) {
         $schedule = array();
     }
+
+    // Get Branch Options
+    $branches = get_posts( array(
+        'post_type'      => 'page_branch',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ) );
 
     ?>
     <div class="doc-meta-wrapper">
@@ -58,7 +73,13 @@ function doctor_render_meta_box( $post ) {
                     <div class="doc-thumbnail-preview">
                         <?php 
                         if ( ! empty( $doctor_thumbnail ) ) {
-                            $url = wp_get_attachment_image_url( $doctor_thumbnail, 'full' );
+                            // Check if it's an ID (numeric) or direct URL
+                            if ( is_numeric( $doctor_thumbnail ) ) {
+                                $url = wp_get_attachment_image_url( $doctor_thumbnail, 'full' );
+                            } else {
+                                $url = $doctor_thumbnail;
+                            }
+                            
                             if ( $url ) {
                                 echo '<div class="doc-image-item" data-id="' . esc_attr( $doctor_thumbnail ) . '">';
                                 echo '<img src="' . esc_url( $url ) . '" style="max-height: 250px; width: auto;">';
@@ -80,7 +101,13 @@ function doctor_render_meta_box( $post ) {
                     <div class="doc-thumbnail-name-preview">
                         <?php 
                         if ( ! empty( $doctor_thumbnail_name ) ) {
-                            $url = wp_get_attachment_image_url( $doctor_thumbnail_name, 'full' );
+                            // Check if it's an ID (numeric) or direct URL
+                            if ( is_numeric( $doctor_thumbnail_name ) ) {
+                                $url = wp_get_attachment_image_url( $doctor_thumbnail_name, 'full' );
+                            } else {
+                                $url = $doctor_thumbnail_name;
+                            }
+                            
                             if ( $url ) {
                                 echo '<div class="doc-image-item" data-id="' . esc_attr( $doctor_thumbnail_name ) . '">';
                                 echo '<img src="' . esc_url( $url ) . '" style="max-height: 250px; width: auto;">';
@@ -105,7 +132,13 @@ function doctor_render_meta_box( $post ) {
                     <div class="doc-image-preview">
                         <?php 
                         if ( ! empty( $doctor_image ) ) {
-                            $url = wp_get_attachment_image_url( $doctor_image, 'full' );
+                            // Check if it's an ID (numeric) or direct URL
+                            if ( is_numeric( $doctor_image ) ) {
+                                $url = wp_get_attachment_image_url( $doctor_image, 'full' );
+                            } else {
+                                $url = $doctor_image;
+                            }
+
                             if ( $url ) {
                                 echo '<div class="doc-image-item" data-id="' . esc_attr( $doctor_image ) . '">';
                                 echo '<img src="' . esc_url( $url ) . '" style="max-height: 250px; width: auto;">';
@@ -333,11 +366,22 @@ function doctor_render_meta_box( $post ) {
                         <?php 
                         if ( ! empty( $schedule ) ) {
                             foreach ( $schedule as $index => $row ) {
+                                // Fix: Cast to array to handle object from JSON
+                                $row = (array) $row;
+                                $date = isset( $row['date'] ) ? $row['date'] : '';
+                                $branch_id = isset( $row['branch'] ) ? $row['branch'] : '';
                                 ?>
                                 <tr class="doc-schedule-row">
                                     <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                    <td><input type="text" name="doctor_schedule[<?php echo $index; ?>][date]" value="<?php echo esc_attr( $row['date'] ); ?>" class="widefat"></td>
-                                    <td><input type="text" name="doctor_schedule[<?php echo $index; ?>][branch]" value="<?php echo esc_attr( $row['branch'] ); ?>" class="widefat"></td>
+                                    <td><input type="text" name="doctor_schedule[<?php echo $index; ?>][date]" value="<?php echo esc_attr( $date ); ?>" class="widefat"></td>
+                                    <td>
+                                        <select name="doctor_schedule[<?php echo $index; ?>][branch]" class="widefat">
+                                            <option value="">-- Select Branch --</option>
+                                            <?php foreach ( $branches as $branch ) : ?>
+                                                <option value="<?php echo esc_attr( $branch->ID ); ?>" <?php selected( $branch_id, $branch->ID ); ?>><?php echo esc_html( $branch->post_title ); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
                                     <td><span class="remove-schedule-row dashicons dashicons-no-alt"></span></td>
                                 </tr>
                                 <?php
@@ -348,7 +392,14 @@ function doctor_render_meta_box( $post ) {
                             <tr class="doc-schedule-row">
                                 <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
                                 <td><input type="text" name="doctor_schedule[0][date]" value="" class="widefat"></td>
-                                <td><input type="text" name="doctor_schedule[0][branch]" value="" class="widefat"></td>
+                                <td>
+                                    <select name="doctor_schedule[0][branch]" class="widefat">
+                                        <option value="">-- Select Branch --</option>
+                                        <?php foreach ( $branches as $branch ) : ?>
+                                            <option value="<?php echo esc_attr( $branch->ID ); ?>"><?php echo esc_html( $branch->post_title ); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
                                 <td><span class="remove-schedule-row dashicons dashicons-no-alt"></span></td>
                             </tr>
                             <?php
@@ -532,6 +583,26 @@ function doctor_admin_enqueue_scripts( $hook ) {
             filemtime( get_stylesheet_directory() . '/assets/js/admin/admin-doctor-single.js' ),
             true
         );
+
+        // Get Branch Options for JS
+        $branches = get_posts( array(
+            'post_type'      => 'page_branch',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+        ) );
+
+        $branch_options = '<option value="">-- Select Branch --</option>';
+        if ( $branches ) {
+            foreach ( $branches as $branch ) {
+                $branch_options .= '<option value="' . esc_attr( $branch->ID ) . '">' . esc_html( $branch->post_title ) . '</option>';
+            }
+        }
+
+        wp_localize_script( 'doctor-admin-js', 'doctorAdminParams', array(
+            'branchOptions' => $branch_options
+        ));
     }
 }
 add_action( 'admin_enqueue_scripts', 'doctor_admin_enqueue_scripts' );

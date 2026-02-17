@@ -33,6 +33,12 @@ function case_review_render_meta_box( $post ) {
 
     // Get Procedures Data
     $case_review_procedures = get_post_meta( $post->ID, '_case_review_procedures', true );
+    
+    // Fix: Handle potential double serialization or string format from sync
+    if ( is_string( $case_review_procedures ) ) {
+        $case_review_procedures = maybe_unserialize( $case_review_procedures );
+    }
+    
     if ( ! is_array( $case_review_procedures ) ) {
         $case_review_procedures = array();
     }
@@ -50,7 +56,13 @@ function case_review_render_meta_box( $post ) {
                         <div class="admin-image-preview thumbnail-image-preview">
                             <?php 
                             if ( ! empty( $case_review_thumbnail ) ) {
-                                $url = wp_get_attachment_image_url( $case_review_thumbnail, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $case_review_thumbnail ) ) {
+                                    $url = wp_get_attachment_image_url( $case_review_thumbnail, 'full' );
+                                } else {
+                                    $url = $case_review_thumbnail;
+                                }
+                                
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_thumbnail ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
@@ -79,7 +91,13 @@ function case_review_render_meta_box( $post ) {
                         <div class="admin-image-preview image-before-after-image-preview">
                             <?php 
                             if ( ! empty( $case_review_image_before_after ) ) {
-                                $url = wp_get_attachment_image_url( $case_review_image_before_after, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $case_review_image_before_after ) ) {
+                                    $url = wp_get_attachment_image_url( $case_review_image_before_after, 'full' );
+                                } else {
+                                    $url = $case_review_image_before_after;
+                                }
+
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_image_before_after ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
@@ -109,11 +127,15 @@ function case_review_render_meta_box( $post ) {
                                 <?php 
                                 if ( ! empty( $case_review_procedures ) ) {
                                     foreach ( $case_review_procedures as $index => $row ) {
+                                        // Fix: Cast to array to handle object from JSON
+                                        $row = (array) $row;
+                                        $procedures = isset( $row['procedures'] ) ? $row['procedures'] : '';
+                                        $quantity = isset( $row['quantity'] ) ? $row['quantity'] : '';
                                         ?>
                                         <tr class="admin-table-row">
                                             <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][procedures]" value="<?php echo esc_attr( $row['procedures'] ); ?>" class="widefat"></td>
-                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][quantity]" value="<?php echo esc_attr( $row['quantity'] ); ?>" class="widefat"></td>
+                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][procedures]" value="<?php echo esc_attr( $procedures ); ?>" class="widefat"></td>
+                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][quantity]" value="<?php echo esc_attr( $quantity ); ?>" class="widefat"></td>
                                             <td><span class="remove-table-row dashicons dashicons-no-alt remove-procedures-row"></span></td>
                                         </tr>
                                         <?php
@@ -151,7 +173,13 @@ function case_review_render_meta_box( $post ) {
                         <div class="admin-image-preview image-before-image-preview">
                             <?php 
                             if ( ! empty( $case_review_image_before ) ) {
-                                $url = wp_get_attachment_image_url( $case_review_image_before, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $case_review_image_before ) ) {
+                                    $url = wp_get_attachment_image_url( $case_review_image_before, 'full' );
+                                } else {
+                                    $url = $case_review_image_before;
+                                }
+                                
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_image_before ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 300px; width: auto;">';
@@ -174,7 +202,13 @@ function case_review_render_meta_box( $post ) {
                         <div class="admin-image-preview image-after-image-preview">
                             <?php 
                             if ( ! empty( $case_review_image_after ) ) {
-                                $url = wp_get_attachment_image_url( $case_review_image_after, 'full' );
+                                // Check if it's an ID (numeric) or direct URL
+                                if ( is_numeric( $case_review_image_after ) ) {
+                                    $url = wp_get_attachment_image_url( $case_review_image_after, 'full' );
+                                } else {
+                                    $url = $case_review_image_after;
+                                }
+                                
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_image_after ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 300px; width: auto;">';

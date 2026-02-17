@@ -136,6 +136,7 @@
 #product-image-filter-category, 
 #product-image-filter-category + .select2-container {
     min-width: 181px;
+    max-width: 181px;
 }
 
 .select2-container .select2-selection--single {
@@ -175,4 +176,38 @@
     font-size: 14px;
     padding: 6px;
     margin-bottom: 0;
+}
+
+.dt-field-col .select2-container--default .select2-selection--multiple {
+    padding-bottom: 0;
+}
+
+.dt-field-col .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    height: 100%;
+    line-height: 1;
+    padding-bottom: 2px;
+}
+
+.dt-field-col .select2-container .select2-selection--multiple .select2-selection__rendered {
+    display: inline-block;
+    vertical-align: top;
+    min-height: 32px;
+    margin: 0;
+}
+
+.dt-field-col .select2-container--default .select2-selection--multiple .select2-search--inline {
+    display: inline-block;
+    vertical-align: top;
+    min-height: 32px;
+}
+
+.dt-field-select .category-select {
+    max-height: 34px;
+}
+
+.search-field {
+    vertical-align: top;
+    width: 300px;
+    height: 35px;
+    line-height: 1;
 }

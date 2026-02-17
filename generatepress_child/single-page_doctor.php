@@ -188,6 +188,10 @@ get_header(); ?>
 											<tr>
 												<th>วัน</th>
 												<th>สาขา</th>
+                                                <th>เบอร์โทรศัพท์</th>
+                                                <th>Line ID</th>
+                                                <th>Line URL</th>
+                                                <th>Google Map</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -196,7 +200,47 @@ get_header(); ?>
 											?>
 											<tr>
 												<td><?php echo esc_html( $row['date'] ); ?></td>
-												<td><?php echo esc_html( $row['branch'] ); ?></td>
+												<td>
+                                                    <?php 
+                                                    $branch_val = $row['branch'];
+                                                    $branch_title = '';
+                                                    $branch_tel = '';
+                                                    $branch_line_id = '';
+                                                    $branch_line_url = '';
+                                                    $branch_map = '';
+
+                                                    if ( is_numeric( $branch_val ) ) {
+                                                        // Get additional meta
+                                                        $branch_title = get_post_meta( $branch_val, '_branch_title', true );
+                                                        
+                                                        // Fallback to post title if _branch_title is empty
+                                                        if ( empty( $branch_title ) ) {
+                                                            $branch_title = get_the_title( $branch_val );
+                                                        }
+
+                                                        $branch_tel = get_post_meta( $branch_val, '_branch_telephone', true );
+                                                        $branch_line_id = get_post_meta( $branch_val, '_branch_id_line', true );
+                                                        $branch_line_url = get_post_meta( $branch_val, '_branch_url_line', true );
+                                                        $branch_map = get_post_meta( $branch_val, '_branch_google_map', true );
+                                                    } else {
+                                                        $branch_title = $branch_val; 
+                                                    }
+
+                                                    echo esc_html( $branch_title );
+                                                    ?>
+                                                </td>
+                                                <td><?php echo esc_html( $branch_tel ); ?></td>
+                                                <td><?php echo esc_html( $branch_line_id ); ?></td>
+                                                <td>
+                                                    <?php if ( $branch_line_url ) : ?>
+                                                        <a href="<?php echo esc_url( $branch_line_url ); ?>" target="_blank">Link</a>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ( $branch_map ) : ?>
+                                                        <a href="<?php echo esc_url( $branch_map ); ?>" target="_blank">Map</a>
+                                                    <?php endif; ?>
+                                                </td>
 											</tr>
 											<?php endforeach; ?>
 										</tbody>

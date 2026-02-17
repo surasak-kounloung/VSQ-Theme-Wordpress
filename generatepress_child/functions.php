@@ -156,6 +156,7 @@ function vsq_doctor_table_nav_info( $which ) {
     if ( ! $screen || 'edit-page_doctor' !== $screen->id || 'top' !== $which ) {
         return;
     }
+    
     ?>
     <div class="alignleft actions">
         <span style="display: flex; align-items: center; line-height: 1; margin-right: 10px; color: #555; font-weight: 500; padding-top: 3px;">
@@ -166,6 +167,42 @@ function vsq_doctor_table_nav_info( $which ) {
     <?php
 }
 add_action( 'manage_posts_extra_tablenav', 'vsq_doctor_table_nav_info' );
+
+
+/**
+ * Sync Button to Header for Doctor Post Type
+ */
+function vsq_doctor_add_sync_button_header() {
+    $screen = get_current_screen();
+    
+    // Check if we are on the doctor post type edit screen
+    if ( ! $screen || 'edit-page_doctor' !== $screen->id ) {
+        return;
+    }
+
+    $sync_url = wp_nonce_url( admin_url( 'admin-post.php?action=vsq_sync_all_doctors' ), 'vsq_sync_all_doctors_action' );
+    
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    }
+
+    if ( $is_sender ) {
+        ?>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                var buttonHtml = '<a href="<?php echo esc_url( $sync_url ); ?>" class="page-title-action" onclick="return confirm(\'คุณต้องการส่งข้อมูลแพทย์ทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่?\');" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1;">' +
+                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> ส่งข้อมูลแพทย์ทั้งหมดไปยังเว็บลูกข่าย' +
+                                 '</a>';
+                $('.page-title-action').after(buttonHtml);
+            });
+        </script>
+        <?php
+    }
+}
+add_action( 'admin_footer', 'vsq_doctor_add_sync_button_header' );
 
 
 /**
@@ -191,7 +228,7 @@ function doctor_default_sidebar_layout( $layout ) {
 
 
 /**
- * Register Custom Post Type: Review
+ * Register Custom Post Type: Case Review
  */
 function register_page_case_review() {
 
@@ -250,6 +287,42 @@ function register_page_case_review() {
 
 }
 add_action( 'init', 'register_page_case_review', 0 );
+
+
+/**
+ * Sync Button to Header for Case Review Post Type
+ */
+function vsq_case_review_add_sync_button_header() {
+    $screen = get_current_screen();
+    
+    // Check if we are on the case review post type edit screen
+    if ( ! $screen || 'edit-page_case_review' !== $screen->id ) {
+        return;
+    }
+
+    $sync_url = wp_nonce_url( admin_url( 'admin-post.php?action=vsq_sync_all_case_reviews' ), 'vsq_sync_all_case_reviews_action' );
+    
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    }
+
+    if ( $is_sender ) {
+        ?>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                var buttonHtml = '<a href="<?php echo esc_url( $sync_url ); ?>" class="page-title-action" onclick="return confirm(\'คุณต้องการส่งข้อมูลรีวิวทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่?\');" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1;">' +
+                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> ส่งข้อมูลรีวิวทั้งหมดไปยังเว็บลูกข่าย' +
+                                 '</a>';
+                $('.page-title-action').after(buttonHtml);
+            });
+        </script>
+        <?php
+    }
+}
+add_action( 'admin_footer', 'vsq_case_review_add_sync_button_header' );
 
 
 /**
@@ -356,6 +429,65 @@ function branch_default_sidebar_layout( $layout ) {
     }
     return $layout;
 }
+
+
+/**
+ * Add Shortcode Explanation to Branch Post Type List (Table Nav)
+ */
+function vsq_branch_table_nav_info( $which ) {
+    $screen = get_current_screen();
+    
+    // Check if we are on the branch post type edit screen and in the top position
+    if ( ! $screen || 'edit-page_branch' !== $screen->id || 'top' !== $which ) {
+        return;
+    }
+
+    ?>
+    <div class="alignleft actions">
+        <span style="display: flex; align-items: center; line-height: 1; margin-right: 10px; color: #555; font-weight: 500; padding-top: 3px;">
+            <span class="dashicons dashicons-shortcode" style="margin-top: 2px; margin-right: 4px;"></span> 
+            Shortcode: <code style="padding: 4px 6px 5px; margin: 0 5px 0 10px;">[branch_list]</code> แสดงรายการสาขาทั้งหมด
+        </span>
+    </div>
+    <?php
+}
+add_action( 'manage_posts_extra_tablenav', 'vsq_branch_table_nav_info' );
+
+
+/**
+ * Sync Button to Header for Case Review Post Type
+ */
+function vsq_branch_add_sync_button_header() {
+    $screen = get_current_screen();
+    
+    // Check if we are on the branch post type edit screen
+    if ( ! $screen || 'edit-page_branch' !== $screen->id ) {
+        return;
+    }
+
+    $sync_url = wp_nonce_url( admin_url( 'admin-post.php?action=vsq_sync_all_branches' ), 'vsq_sync_all_branches_action' );
+    
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    }
+
+    if ( $is_sender ) {
+        ?>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                var buttonHtml = '<a href="<?php echo esc_url( $sync_url ); ?>" class="page-title-action" onclick="return confirm(\'คุณต้องการส่งข้อมูลสาขาทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่?\');" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1;">' +
+                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> ส่งข้อมูลสาขาทั้งหมดไปยังเว็บลูกข่าย' +
+                                 '</a>';
+                $('.page-title-action').after(buttonHtml);
+            });
+        </script>
+        <?php
+    }
+}
+add_action( 'admin_footer', 'vsq_branch_add_sync_button_header' );
 
 
 /** 
@@ -731,6 +863,30 @@ function process_shortcodes_in_rankmath_breadcrumbs( $crumbs, $class ) {
     return $crumbs;
 }
 add_filter( 'rank_math/frontend/breadcrumb/items', 'process_shortcodes_in_rankmath_breadcrumbs', 10, 2 );
+
+
+/**
+ * Process shortcodes in Yoast SEO Title
+ */
+add_filter( 'wpseo_title', 'do_shortcode' );
+
+
+/**
+ * Process shortcodes in Rank Math SEO Title
+ */
+add_filter( 'rank_math/frontend/title', 'do_shortcode' );
+
+
+/**
+ * Process shortcodes in Yoast SEO Meta Description
+ */
+add_filter( 'wpseo_metadesc', 'do_shortcode' );
+
+
+/**
+ * Process shortcodes in Rank Math SEO Meta Description
+ */
+add_filter( 'rank_math/frontend/description', 'do_shortcode' );
 
 
 /**
