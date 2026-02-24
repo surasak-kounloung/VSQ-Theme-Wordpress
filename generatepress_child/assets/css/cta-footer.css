@@ -1,0 +1,232 @@
+@charset "UTF-8";
+.cta-footer-wrapper {
+  position: fixed;
+  right: 0;
+  bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: auto;
+  gap: 16px;
+  padding: 0 20px;
+  z-index: 98;
+  transition: bottom 0.8s ease;
+}
+
+.cta-footer-wrapper.pdpa-hide {
+  bottom: 69px;
+}
+
+.cta-footer-item {
+  display: flex;
+  position: relative;
+  padding: 2px;
+  width: auto;
+  height: 50px;
+  overflow: hidden;
+  border-radius: 50px;
+  animation: gradient 2.5s linear infinite;
+  box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.3490196078);
+  transition: 0.32s;
+}
+
+.cta-footer-content {
+  display: flex;
+  overflow: hidden;
+  border-radius: 50px;
+}
+
+.cta-footer-content,
+.cta-footer-image,
+.cta-footer-image img {
+  width: auto;
+  height: 100%;
+}
+
+.cta-footer-image img {
+  max-width: unset;
+}
+
+.btn-cta-line .cta-footer-content {
+  padding: 3px 6px;
+  background-color: #00c300;
+}
+
+.btn-cta-line .cta-footer-content::before,
+.btn-cta-line .cta-footer-content::after {
+  content: "หมอตอบเองครับ";
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 88px;
+  height: 100%;
+  font-family: "Kanit", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: 1.5px;
+  text-align: left;
+  padding-right: 10px;
+  margin-left: 6px;
+}
+
+.btn-cta-line .cta-footer-content::before {
+  content: "";
+  display: none;
+}
+
+.cta-footer-en .btn-cta-line .cta-footer-content {
+  width: 144px;
+}
+
+.cta-footer-en .btn-cta-line .cta-footer-content::before,
+.cta-footer-en .btn-cta-line .cta-footer-content::after {
+  width: auto;
+  height: auto;
+}
+
+.cta-footer-en .btn-cta-line .cta-footer-content::before {
+  content: "Chat";
+  display: flex;
+  position: absolute;
+  top: 8px;
+  left: 55px;
+  font-size: 17px;
+  letter-spacing: normal;
+  margin-left: 0;
+  order: 2;
+}
+
+.cta-footer-en .btn-cta-line .cta-footer-content::after {
+  content: "with Doctor";
+  position: absolute;
+  bottom: 8px;
+  left: 55px;
+  font-size: 14px;
+  letter-spacing: normal;
+  margin-left: 0;
+  order: 3;
+}
+
+.cta-footer-en .btn-cta-line .cta-footer-image {
+  order: 1;
+}
+
+@media (max-width: 1919px) {
+  .cta-footer-wrapper {
+    bottom: 1.0416666667vw;
+    gap: 0.8333333333vw;
+    padding: 0 1.0416666667vw;
+  }
+  .cta-footer-wrapper.pdpa-hide {
+    bottom: 3.59375vw;
+  }
+  .cta-footer-item {
+    padding: 0.1041666667vw;
+    height: 2.6041666667vw;
+    border-radius: 2.6041666667vw;
+    box-shadow: 0 0.1041666667vw 0.15625vw 1px rgba(0, 0, 0, 0.3490196078);
+  }
+  .cta-footer-content {
+    border-radius: 2.6041666667vw;
+  }
+  .btn-cta-line .cta-footer-content {
+    padding: 0.15625vw 0.3125vw;
+  }
+  .btn-cta-line .cta-footer-content::before,
+  .btn-cta-line .cta-footer-content::after {
+    width: 4.5833333333vw;
+    font-size: 0.9375vw;
+    letter-spacing: 0.078125vw;
+    padding-right: 0.5208333333vw;
+    margin-left: 0.3125vw;
+  }
+  .cta-footer-en .btn-cta-line .cta-footer-content {
+    width: 7.5vw;
+  }
+  .cta-footer-en .btn-cta-line .cta-footer-content::before {
+    top: 0.4166666667vw;
+    left: 2.8645833333vw;
+    font-size: 0.8854166667vw;
+  }
+  .cta-footer-en .btn-cta-line .cta-footer-content::after {
+    bottom: 0.4166666667vw;
+    left: 2.8645833333vw;
+    font-size: 0.7291666667vw;
+  }
+}
+@media (max-width: 767px) {
+  .cta-footer-wrapper {
+    bottom: 2.6041666667vw;
+    gap: 2.6041666667vw;
+    padding: 0 2.6041666667vw;
+  }
+  .cta-footer-wrapper.pdpa-hide {
+    bottom: 8.984375vw;
+  }
+  .cta-footer-item {
+    padding: 0.2604166667vw;
+    height: 9.765625vw;
+    border-radius: 6.5104166667vw;
+    box-shadow: 0 0.2604166667vw 0.78125vw 1px rgba(0, 0, 0, 0.3490196078);
+  }
+  .cta-footer-item.icon-order-1,
+  .cta-footer-item.icon-order-2,
+  .cta-footer-item.icon-order-3 {
+    position: absolute;
+    right: 2.6041666667vw;
+    width: 11.4583333333vw;
+    height: 11.4583333333vw;
+  }
+  .cta-footer-item.icon-order-1 {
+    bottom: 12.2395833333vw;
+  }
+  .cta-footer-item.icon-order-2 {
+    bottom: 25.78125vw;
+  }
+  .cta-footer-item.icon-order-3 {
+    bottom: 39.0625vw;
+  }
+  .cta-footer-content {
+    border-radius: 6.5104166667vw;
+  }
+  .cta-footer-item.btn-cta-fb .cta-footer-image {
+    margin-left: -2.9947916667vw;
+  }
+  .btn-cta-line .cta-footer-content {
+    padding: 0.5208333333vw 0.78125vw;
+  }
+  .btn-cta-line .cta-footer-content::before,
+  .btn-cta-line .cta-footer-content::after {
+    width: 15.625vw;
+    font-size: 3.3854166667vw;
+    line-height: 1.1;
+    letter-spacing: 0.2604166667vw;
+    padding-right: 1.0416666667vw;
+    margin-left: 0.78125vw;
+  }
+  .cta-footer-en .btn-cta-line .cta-footer-content {
+    width: 26.3020833333vw;
+  }
+  .cta-footer-en .btn-cta-line .cta-footer-content::before {
+    top: 1.3020833333vw;
+    left: 9.8958333333vw;
+    font-size: 3.6458333333vw;
+  }
+  .cta-footer-en .btn-cta-line .cta-footer-content::after {
+    bottom: 1.4322916667vw;
+    left: 9.8958333333vw;
+    font-size: 2.6041666667vw;
+  }
+}
+@keyframes gradient {
+  from {
+    background-position: 0%;
+  }
+  to {
+    background-position: -90%;
+  }
+}
+
+/*# sourceMappingURL=cta-footer.css.map */

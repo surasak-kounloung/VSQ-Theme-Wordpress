@@ -52,6 +52,13 @@ function doctor_render_meta_box( $post ) {
         $schedule = array();
     }
 
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    } 
+
     // Get Branch Options
     $branches = get_posts( array(
         'post_type'      => 'page_branch',
@@ -60,6 +67,7 @@ function doctor_render_meta_box( $post ) {
         'orderby'        => 'title',
         'order'          => 'ASC',
     ) );
+    
 
     ?>
     <div class="doc-meta-wrapper">
@@ -83,13 +91,17 @@ function doctor_render_meta_box( $post ) {
                             if ( $url ) {
                                 echo '<div class="doc-image-item" data-id="' . esc_attr( $doctor_thumbnail ) . '">';
                                 echo '<img src="' . esc_url( $url ) . '" style="max-height: 250px; width: auto;">';
-                                echo '<span class="doc-remove-thumbnail dashicons dashicons-no-alt"></span>';
+                                if ( $is_sender ) {
+                                    echo '<span class="doc-remove-thumbnail dashicons dashicons-no-alt"></span>';
+                                }
                                 echo '</div>';
                             }
                         }
                         ?>
                     </div>
+                    <?php if ( $is_sender ) { ?>
                     <button type="button" class="button" id="doctor_add_thumbnail"><?php echo empty($doctor_thumbnail) ? 'Add Thumbnail' : 'Change Thumbnail'; ?></button>
+                    <?php } ?>
                 </div>
             </div>
 
@@ -111,13 +123,17 @@ function doctor_render_meta_box( $post ) {
                             if ( $url ) {
                                 echo '<div class="doc-image-item" data-id="' . esc_attr( $doctor_thumbnail_name ) . '">';
                                 echo '<img src="' . esc_url( $url ) . '" style="max-height: 250px; width: auto;">';
-                                echo '<span class="doc-remove-thumbnail-name dashicons dashicons-no-alt"></span>';
+                                if ( $is_sender ) {
+                                    echo '<span class="doc-remove-thumbnail-name dashicons dashicons-no-alt"></span>';
+                                }
                                 echo '</div>';
                             }
                         }
                         ?>
                     </div>
+                    <?php if ( $is_sender ) { ?>
                     <button type="button" class="button" id="doctor_add_thumbnail_name"><?php echo empty($doctor_thumbnail_name) ? 'Add Thumbnail' : 'Change Thumbnail'; ?></button>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -142,13 +158,17 @@ function doctor_render_meta_box( $post ) {
                             if ( $url ) {
                                 echo '<div class="doc-image-item" data-id="' . esc_attr( $doctor_image ) . '">';
                                 echo '<img src="' . esc_url( $url ) . '" style="max-height: 250px; width: auto;">';
-                                echo '<span class="doc-remove-image dashicons dashicons-no-alt"></span>';
+                                if ( $is_sender ) {
+                                    echo '<span class="doc-remove-image dashicons dashicons-no-alt"></span>';
+                                }
                                 echo '</div>';
                             }
                         }
                         ?>
                     </div>
+                    <?php if ( $is_sender ) { ?>
                     <button type="button" class="button" id="doctor_add_image"><?php echo empty($doctor_image) ? 'Add Image' : 'Change Image'; ?></button>
+                    <?php } ?>
                 </div>
             </div>
 
@@ -156,22 +176,22 @@ function doctor_render_meta_box( $post ) {
                 <!-- Nickname -->
                 <div class="doc-field-row">
                     <label for="doctor_nickname"><strong>Nickname</strong></label>
-                    <input type="text" name="doctor_nickname" id="doctor_nickname" value="<?php echo esc_attr( $nickname ); ?>" class="widefat">
+                    <input type="text" name="doctor_nickname" id="doctor_nickname" value="<?php echo esc_attr( $nickname ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Full Name TH -->
                 <div class="doc-field-row">
                     <label for="doctor_fullname_th"><strong>Full Name TH</strong></label>
-                    <input type="text" name="doctor_fullname_th" id="doctor_fullname_th" value="<?php echo esc_attr( $fullname_th ); ?>" class="widefat">
+                    <input type="text" name="doctor_fullname_th" id="doctor_fullname_th" value="<?php echo esc_attr( $fullname_th ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Full Name EN -->
                 <div class="doc-field-row">
                     <label for="doctor_fullname_en"><strong>Full Name EN</strong></label>
-                    <input type="text" name="doctor_fullname_en" id="doctor_fullname_en" value="<?php echo esc_attr( $fullname_en ); ?>" class="widefat">
+                    <input type="text" name="doctor_fullname_en" id="doctor_fullname_en" value="<?php echo esc_attr( $fullname_en ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Medical License No. -->
                 <div class="doc-field-row">
                     <label for="doctor_medical_license_no"><strong>Medical License No.</strong></label>
-                    <input type="text" name="doctor_medical_license_no" id="doctor_medical_license_no" value="<?php echo esc_attr( $medical_license_no ); ?>" class="widefat">
+                    <input type="text" name="doctor_medical_license_no" id="doctor_medical_license_no" value="<?php echo esc_attr( $medical_license_no ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
             </div>
         </div>
@@ -180,9 +200,9 @@ function doctor_render_meta_box( $post ) {
         <!-- Education -->
         <div class="doc-field-row">
             <label><strong>Education</strong></label>
-            <div class="doc-editor-wrapper">
+            <div class="doc-editor-wrapper<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
             <?php 
-            wp_editor( $education, 'doctor_education', array(
+            $editor_education_settings = array(
                 'textarea_name' => 'doctor_education',
                 'media_buttons' => false,
                 'textarea_rows' => 5,
@@ -201,7 +221,19 @@ function doctor_render_meta_box( $post ) {
                 ),
                 // บังคับให้เริ่มที่โหมด HTML เสมอ แก้ไข error setBaseAndExtent
                 'default_editor' => 'html',
-            ));  
+            );
+
+            if ( ! $is_sender ) {
+                $editor_education_settings['tinymce']['readonly'] = true;
+            }
+
+            wp_editor( $education, 'doctor_education', $editor_education_settings );
+
+            if ( ! $is_sender ) {
+                ?>
+                <script>jQuery(document).ready(function($){ $('#doctor_education').prop('readonly', true); });</script>
+                <?php
+            }
             ?>
             </div>
         </div>
@@ -210,9 +242,9 @@ function doctor_render_meta_box( $post ) {
         <!-- Experience -->
         <div class="doc-field-row">
             <label><strong>Experience</strong></label>
-            <div class="doc-editor-wrapper">
+            <div class="doc-editor-wrapper<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
             <?php 
-            wp_editor( $experience, 'doctor_experience', array(
+            $editor_experience_settings = array(
                 'textarea_name' => 'doctor_experience',
                 'media_buttons' => false,
                 'textarea_rows' => 5,
@@ -231,7 +263,19 @@ function doctor_render_meta_box( $post ) {
                 ),
                 // บังคับให้เริ่มที่โหมด HTML เสมอ แก้ไข error setBaseAndExtent
                 'default_editor' => 'html',
-            )); 
+            );
+
+            if ( ! $is_sender ) {
+                $editor_experience_settings['tinymce']['readonly'] = true;
+            }
+
+            wp_editor( $experience, 'doctor_experience', $editor_experience_settings );
+
+            if ( ! $is_sender ) {
+                ?>
+                <script>jQuery(document).ready(function($){ $('#doctor_experience').prop('readonly', true); });</script>
+                <?php
+            }
             ?>
             </div>
         </div>
@@ -240,9 +284,9 @@ function doctor_render_meta_box( $post ) {
         <!-- Specialty -->
         <div class="doc-field-row">
             <label><strong>Specialty</strong></label>
-            <div class="doc-editor-wrapper">
+            <div class="doc-editor-wrapper<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
             <?php 
-            wp_editor( $specialty, 'doctor_specialty', array(
+            $editor_specialty_settings = array(
                 'textarea_name' => 'doctor_specialty',
                 'media_buttons' => false,
                 'textarea_rows' => 5,
@@ -261,7 +305,19 @@ function doctor_render_meta_box( $post ) {
                 ),
                 // บังคับให้เริ่มที่โหมด HTML เสมอ แก้ไข error setBaseAndExtent
                 'default_editor' => 'html',
-            ));  
+            );
+
+            if ( ! $is_sender ) {
+                $editor_specialty_settings['tinymce']['readonly'] = true;
+            }
+
+            wp_editor( $specialty, 'doctor_specialty', $editor_specialty_settings );
+
+            if ( ! $is_sender ) {
+                ?>
+                <script>jQuery(document).ready(function($){ $('#doctor_specialty').prop('readonly', true); });</script>
+                <?php
+            }
             ?>
             </div>
         </div>
@@ -272,7 +328,7 @@ function doctor_render_meta_box( $post ) {
             <label><strong>Certificate</strong></label>
             <div class="doc-editor-wrapper">
             <?php 
-            wp_editor( $certificates, 'doctor_certificates', array(
+            $editor_certificates_settings = array(
                 'textarea_name' => 'doctor_certificates',
                 'media_buttons' => false,
                 'textarea_rows' => 5,
@@ -291,7 +347,19 @@ function doctor_render_meta_box( $post ) {
                 ),
                 // บังคับให้เริ่มที่โหมด HTML เสมอ แก้ไข error setBaseAndExtent
                 'default_editor' => 'html',
-            )); 
+            );
+
+            if ( ! $is_sender ) {
+                $editor_certificates_settings['tinymce']['readonly'] = true;
+            }
+
+            wp_editor( $certificates, 'doctor_certificates', $editor_certificates_settings );
+
+            if ( ! $is_sender ) {
+                ?>
+                <script>jQuery(document).ready(function($){ $('#doctor_certificates').prop('readonly', true); });</script>
+                <?php
+            }
             ?>
             </div>
         </div>
@@ -310,16 +378,24 @@ function doctor_render_meta_box( $post ) {
                             foreach ( $ids as $id ) {
                                 $url = wp_get_attachment_image_url( $id, 'full' );
                                 if ( $url ) {
-                                    echo '<div class="doc-cert-item" data-id="' . esc_attr( $id ) . '">';
+                                    if ( $is_sender ) {
+                                        echo '<div class="doc-cert-item" data-id="' . esc_attr( $id ) . '">';
+                                    } else {
+                                        echo '<div class="doc-cert-item hide-click" data-id="' . esc_attr( $id ) . '">';
+                                    }
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 150px; width: auto;">';
-                                    echo '<span class="doc-remove-cert dashicons dashicons-no-alt"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="doc-remove-cert dashicons dashicons-no-alt"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                         }
                         ?>
                     </div>
+                    <?php if ( $is_sender ) { ?>
                     <button type="button" class="button" id="doctor_add_certificate">Add Certificates</button>
+                    <?php } ?>
                 </div>
             </div>
             <!-- Training Gallery -->
@@ -334,16 +410,24 @@ function doctor_render_meta_box( $post ) {
                             foreach ( $ids as $id ) {
                                 $url = wp_get_attachment_image_url( $id, 'full' );
                                 if ( $url ) {
-                                    echo '<div class="doc-training-item" data-id="' . esc_attr( $id ) . '">';
+                                    if ( $is_sender ) {
+                                        echo '<div class="doc-training-item" data-id="' . esc_attr( $id ) . '">';
+                                    } else {
+                                        echo '<div class="doc-training-item hide-click" data-id="' . esc_attr( $id ) . '">';
+                                    }
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 150px; width: auto;">';
-                                    echo '<span class="doc-remove-training dashicons dashicons-no-alt"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="doc-remove-training dashicons dashicons-no-alt"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                         }
                         ?>
                     </div>
+                    <?php if ( $is_sender ) { ?>
                     <button type="button" class="button" id="doctor_add_training">Add Training</button>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -359,7 +443,9 @@ function doctor_render_meta_box( $post ) {
                             <th width="30"></th>
                             <th>Schedule date</th>
                             <th>Schedule branch</th>
-                            <th width="30"></th>
+                            <?php if ( $is_sender ) { ?>
+                                <th width="30"></th>
+                            <?php } ?>
                         </tr>
                     </thead>
                     <tbody id="doc-schedule-body">
@@ -372,17 +458,19 @@ function doctor_render_meta_box( $post ) {
                                 $branch_id = isset( $row['branch'] ) ? $row['branch'] : '';
                                 ?>
                                 <tr class="doc-schedule-row">
-                                    <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                    <td><input type="text" name="doctor_schedule[<?php echo $index; ?>][date]" value="<?php echo esc_attr( $date ); ?>" class="widefat"></td>
+                                    <td class="row-index<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
+                                    <td><input type="text" name="doctor_schedule[<?php echo $index; ?>][date]" value="<?php echo esc_attr( $date ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
                                     <td>
-                                        <select name="doctor_schedule[<?php echo $index; ?>][branch]" class="widefat">
+                                        <select name="doctor_schedule[<?php echo $index; ?>][branch]" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> disabled<?php } ?>>
                                             <option value="">-- Select Branch --</option>
                                             <?php foreach ( $branches as $branch ) : ?>
                                                 <option value="<?php echo esc_attr( $branch->ID ); ?>" <?php selected( $branch_id, $branch->ID ); ?>><?php echo esc_html( $branch->post_title ); ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </td>
+                                    <?php if ( $is_sender ) { ?>
                                     <td><span class="remove-schedule-row dashicons dashicons-no-alt"></span></td>
+                                    <?php } ?>
                                 </tr>
                                 <?php
                             }
@@ -391,25 +479,29 @@ function doctor_render_meta_box( $post ) {
                             ?>
                             <tr class="doc-schedule-row">
                                 <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                <td><input type="text" name="doctor_schedule[0][date]" value="" class="widefat"></td>
+                                <td><input type="text" name="doctor_schedule[0][date]" value="" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
                                 <td>
-                                    <select name="doctor_schedule[0][branch]" class="widefat">
+                                    <select name="doctor_schedule[0][branch]" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> disabled<?php } ?>>
                                         <option value="">-- Select Branch --</option>
                                         <?php foreach ( $branches as $branch ) : ?>
                                             <option value="<?php echo esc_attr( $branch->ID ); ?>"><?php echo esc_html( $branch->post_title ); ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </td>
+                                <?php if ( $is_sender ) { ?>
                                 <td><span class="remove-schedule-row dashicons dashicons-no-alt"></span></td>
+                                <?php } ?>
                             </tr>
                             <?php
                         }
                         ?>
                     </tbody>
                 </table>
+                <?php if ( $is_sender ) { ?>
                 <div class="text-right" style="margin-top: 10px;">
                     <button type="button" class="button button-primary" id="add-schedule-row">Add Row</button>
                 </div>
+                <?php } ?>
             </div>
         </div>
         <hr>
@@ -421,11 +513,13 @@ function doctor_render_meta_box( $post ) {
                 <!-- Hidden input to store selected IDs -->
                 <input type="hidden" name="doctor_case_reviews" id="doctor_case_reviews" value="<?php echo esc_attr( $case_reviews ); ?>">
                 
+                <?php if ( $is_sender ) { ?>
                 <!-- Search Input -->
                 <div class="doc-case-review-search" style="position: relative;">
                     <input type="text" id="doctor_search_case_review" class="widefat" placeholder="Search Case Reviews by Title..." autocomplete="off">
                     <div id="doctor_case_review_search_results" class="doc-search-results" style="display:none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ddd; max-height: 200px; overflow-y: auto; z-index: 999;"></div>
                 </div>
+                <?php } ?>
 
                 <!-- Selected Case Reviews List -->
                 <div class="doc-case-review-selected" style="margin-top: 10px;">
@@ -435,10 +529,16 @@ function doctor_render_meta_box( $post ) {
                         foreach ( $ids as $id ) {
                             $post_title = get_the_title( $id );
                             if ( $post_title ) {
-                                echo '<div class="doc-case-review-item" data-id="' . esc_attr( $id ) . '" style="display: flex; align-items: center; padding: 5px; background: #f0f0f0; margin-bottom: 5px; border: 1px solid #ddd;">';
+                                if ( $is_sender ) {
+                                    echo '<div class="doc-case-review-item" data-id="' . esc_attr( $id ) . '" style="display: flex; align-items: center; padding: 5px; background: #f0f0f0; margin-bottom: 5px; border: 1px solid #ddd;">';
+                                } else {
+                                    echo '<div class="doc-case-review-item hide-click" data-id="' . esc_attr( $id ) . '" style="display: flex; align-items: center; padding: 5px; background: #f0f0f0; margin-bottom: 5px; border: 1px solid #ddd;">';
+                                }
                                 echo '<span class="dashicons dashicons-move" style="cursor: move; margin-right: 5px; color: #ccc;"></span>';
                                 echo '<span class="doc-case-review-title" style="flex-grow: 1;">' . esc_html( $post_title ) . '</span>';
-                                echo '<span class="doc-remove-case-review dashicons dashicons-no-alt" style="cursor: pointer; color: #d63638;"></span>';
+                                if ( $is_sender ) {
+                                    echo '<span class="doc-remove-case-review dashicons dashicons-no-alt" style="cursor: pointer; color: #d63638;"></span>';
+                                }
                                 echo '</div>';
                             }
                         }

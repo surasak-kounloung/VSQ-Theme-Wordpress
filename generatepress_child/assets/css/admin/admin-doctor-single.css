@@ -196,3 +196,8 @@ hr {
 .doc-case-review-item:hover {
     background: #e5e5e5 !important;
 }
+
+.wp-core-ui select.disabled, 
+.wp-core-ui select:disabled {
+    color: #222;
+}

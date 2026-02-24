@@ -1,7 +1,7 @@
-$max-viewport-dt: 1920;
+$max-viewport-nb: 1920;
 $max-viewport-mb: 768;
-@function get-vw-dt($target) {
-    $vw-context: ($max-viewport-dt * .01) * 1px;
+@function get-vw-nb($target) {
+    $vw-context: ($max-viewport-nb * .01) * 1px;
     @return ($target/$vw-context) * 1vw;
 }
 @function get-vw-mb($target) {

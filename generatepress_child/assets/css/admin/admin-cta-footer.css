@@ -43,6 +43,9 @@
     font-size: 12px;
     color: #555;
 }
+.cta-field-checkbox label { 
+    margin-bottom: 12px; 
+}
 .cta-field .wp-picker-input-wrap label {
     display: inline-block;
 }
@@ -67,7 +70,7 @@
 .cta-field-image { width: 20%; }
 .cta-field-id { width: 10%; }
 .cta-field-color { width: 225px; }
-.cta-field-url { flex-grow: 1; min-width: 200px; }
+.cta-field-url { display: flex; flex-grow: 1; min-width: 200px; }
 .cta-field-switch { width: 12%; }
 
 /* Color Picker */
@@ -122,4 +125,7 @@
 }
 .remove-row-btn:hover {
     color: red;
+}
+input[type=text]::placeholder {
+    color: #aaa;
 }

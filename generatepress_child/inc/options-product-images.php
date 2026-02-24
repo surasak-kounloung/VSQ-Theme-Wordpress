@@ -39,7 +39,7 @@ function product_image_add_admin_menu() {
         'product-images-settings',
         'product_image_options_page_html',
         'dashicons-format-image',
-        47
+        48
     );
 }
 add_action( 'admin_menu', 'product_image_add_admin_menu' );
@@ -148,8 +148,17 @@ function product_image_options_page_html() {
             ?>
 
             <div id="poststuff">
-                <div id="post-body" class="metabox-holder columns-2">
+                <?php 
+                // Check if user is a sender
+                $is_sender = false;
+                if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+                    $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+                    $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+                } 
+                ?>
+                <div id="post-body" class="metabox-holder<?php if ( $is_sender ) { ?> columns-2<?php } ?>">
                     
+                    <?php if ( $is_sender ) { ?>
                     <!-- Right Sidebar (Publish Box) -->
                     <div id="postbox-container-1" class="postbox-container">
                         <div id="side-sortables" class="meta-box-sortables">
@@ -172,6 +181,7 @@ function product_image_options_page_html() {
                             </div>
                         </div>
                     </div>
+                    <?php } ?>
 
                     <!-- Main Content (Left Column) -->
                     <div id="postbox-container-2" class="postbox-container">
@@ -182,10 +192,10 @@ function product_image_options_page_html() {
                                 <div class="postbox-header">
                                     <h2 class="heading">Product Images List</h2>
                                 </div>
-                                <div class="inside">
+                                <div class="inside" style="padding-top: 6px;">
                                     
                                     <!-- Filter & Pagination Toolbar -->
-                                    <div class="dt-toolbar tablenav top">
+                                    <div class="dt-toolbar tablenav top" style="margin-top: 0;">
                                         <div class="alignleft actions">
                                             <select id="product-image-filter-category">
                                                 <option value="">View All Categories</option>
@@ -224,9 +234,11 @@ function product_image_options_page_html() {
                                         No images found for this category.
                                     </div>
 
+                                    <?php if ( $is_sender ) { ?>
                                     <div class="dt-actions" style="margin-top: 20px;">
                                         <button class="button button-primary dt-repeater-add">Add New Image</button>
                                     </div>
+                                    <?php } ?>
 
                                 </div>
                             </div>
@@ -262,6 +274,13 @@ function product_image_render_row( $index, $data ) {
     $image_id = isset( $data['image_id'] ) ? $data['image_id'] : '';
     
     $categories = product_image_get_categories();
+
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    } 
     
     ?>
     <div class="dt-repeater-row" data-category="<?php echo esc_attr( implode( ',', $category ) ); ?>">
@@ -269,7 +288,9 @@ function product_image_render_row( $index, $data ) {
             <span class="dt-row-title">Image Item</span>
             <div class="dt-row-actions">
                  <span class="dt-toggle-row dashicons dashicons-minus"></span>
-                 <span class="dt-remove-row dashicons dashicons-no-alt" title="Remove row"></span>
+                 <?php if ( $is_sender ) { ?>
+                    <span class="dt-remove-row dashicons dashicons-no-alt" title="Remove row"></span>
+                 <?php } ?>
             </div>
         </div>
         <div class="dt-row-content">
@@ -283,32 +304,39 @@ function product_image_render_row( $index, $data ) {
                     <div style="margin-top: 10px; margin-bottom: 5px;">
                         <input type="hidden" class="image-url-field" name="product_images_data[items][<?php echo $index; ?>][image_url]" value="<?php echo esc_attr($image_url); ?>">
                         <input type="hidden" class="image-id-field" name="product_images_data[items][<?php echo $index; ?>][image_id]" value="<?php echo esc_attr($image_id); ?>">
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button upload-image-button">Select Image</button>
                         <button type="button" class="button remove-image-button" style="color: #a00;">Remove</button>
+                        <?php } ?>
                     </div>
                 </div>
 
                 <!-- Name -->
                 <div class="dt-field-col">
                     <label>Name</label>
-                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][name]" value="<?php echo esc_attr( $name ); ?>" placeholder="">
+                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][name]" value="<?php echo esc_attr( $name ); ?>" placeholder=""<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                 </div>
 
                 <!-- Category -->
                 <div class="dt-field-col dt-field-select">
                     <label>Category</label>
-                    <select name="product_images_data[items][<?php echo $index; ?>][category][]" class="category-select" multiple="multiple">
+                    <select name="product_images_data[items][<?php echo $index; ?>][category][]" class="category-select" multiple="multiple"<?php if ( ! $is_sender ) { ?> disabled<?php } ?>>
                         <option value="">Select Category</option>
                         <?php foreach($categories as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php echo in_array( $key, $category ) ? 'selected="selected"' : ''; ?>><?php echo esc_html($label); ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if ( ! $is_sender ) : ?>
+                        <?php foreach( $category as $cat_val ): ?>
+                            <input type="hidden" name="product_images_data[items][<?php echo $index; ?>][category][]" value="<?php echo esc_attr($cat_val); ?>">
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Shortcode Name -->
                 <div class="dt-field-col">
                     <label>Shortcode Name (Key)</label>
-                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][shortcode_name]" value="<?php echo esc_attr( $shortcode_name ); ?>" placeholder="e.g. filler_under_eye">
+                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][shortcode_name]" value="<?php echo esc_attr( $shortcode_name ); ?>" placeholder="e.g. filler_under_eye"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                     <p class="description">Shortcode: <code>[product_img name="<?php echo esc_attr( $shortcode_name ); ?>" alt="" class="" caption=""]</code></p>
                 </div>
             </div>

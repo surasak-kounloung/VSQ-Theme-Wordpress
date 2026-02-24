@@ -91,6 +91,16 @@ function sb_options_page_html()
 
                     <!-- Right Sidebar (Publish Box) -->
                     <div id="postbox-container-1" class="postbox-container">
+                        <?php 
+                        // Check if user is a sender
+                        $is_sender = false;
+                        if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+                            $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+                            $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+                        } 
+                        
+                        if ( $is_sender ) {
+                        ?>
                         <div id="side-sortables" class="meta-box-sortables">
                             <div id="submitdiv" class="postbox">
                                 <div class="postbox-header">
@@ -110,6 +120,7 @@ function sb_options_page_html()
                                 </div>
                             </div>
                         </div>
+                        <?php } ?>
 
                         <!-- Shortcode Usage Box -->
                         <div class="postbox">
@@ -138,7 +149,7 @@ function sb_options_page_html()
                                         <button type="button" class="handlediv" aria-expanded="true"><span class="screen-reader-text">Toggle panel: Banner Slide</span><span class="toggle-indicator" aria-hidden="true"></span></button>
                                     </div>
                                 </div>
-                                <div class="inside">
+                                <div class="inside" style="padding-top: 6px;">
 
                                     <div class="sb-repeater-container">
                                         <?php
@@ -150,9 +161,11 @@ function sb_options_page_html()
                                         ?>
                                     </div>
 
+                                    <?php if ( $is_sender ) { ?>
                                     <div class="sb-actions">
                                         <button class="button button-primary sb-repeater-add">Add Row</button>
                                     </div>
+                                    <?php } ?>
 
                                 </div>
                             </div>
@@ -186,14 +199,23 @@ function sb_render_slide_row($index, $data)
     $url = isset($data['url']) ? $data['url'] : '';
     $new_tab = isset($data['new_tab']) ? $data['new_tab'] : '';
 
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    } 
+
 ?>
     <div class="sb-repeater-row">
-        <div class="sb-row-header">
+        <div class="sb-row-header<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
             <span class="sb-row-handle dashicons dashicons-menu"></span>
             <span class="sb-row-number"><?php echo is_numeric($index) ? $index + 1 : ''; ?></span>
+            <?php if ( $is_sender ) { ?>
             <span class="sb-row-actions">
                 <span class="sb-remove-row dashicons dashicons-no-alt" title="Remove row"></span>
             </span>
+            <?php } ?>
         </div>
         <div class="sb-row-content">
             <div class="sb-row-columns">
@@ -214,8 +236,8 @@ function sb_render_slide_row($index, $data)
                             <input type="hidden" class="sb-image-url" name="slide_banner_data[<?php echo $index; ?>][image_pc]" value="<?php echo esc_attr($image_pc); ?>">
                             <input type="hidden" class="sb-image-id" name="slide_banner_data[<?php echo $index; ?>][image_pc_id]" value="<?php echo esc_attr($image_pc_id); ?>">
 
-                            <button class="button sb-upload-image" <?php echo $has_image_pc ? 'style="display:none;"' : ''; ?>>Add Image</button>
-                            <button class="button sb-remove-image" <?php echo ! $has_image_pc ? 'style="display:none;"' : ''; ?>>Remove</button>
+                            <button class="button sb-upload-image hide-not-sender" <?php echo $has_image_pc ? 'style="display:none;"' : ''; ?>>Add Image</button>
+                            <button class="button sb-remove-image hide-not-sender" <?php echo ! $has_image_pc ? 'style="display:none;"' : ''; ?>>Remove</button>
                         </div>
                     </div>
                 </div>
@@ -237,8 +259,8 @@ function sb_render_slide_row($index, $data)
                             <input type="hidden" class="sb-image-url" name="slide_banner_data[<?php echo $index; ?>][image_mobile]" value="<?php echo esc_attr($image_mobile); ?>">
                             <input type="hidden" class="sb-image-id" name="slide_banner_data[<?php echo $index; ?>][image_mobile_id]" value="<?php echo esc_attr($image_mobile_id); ?>">
 
-                            <button class="button sb-upload-image" <?php echo $has_image_mobile ? 'style="display:none;"' : ''; ?>>Add Image</button>
-                            <button class="button sb-remove-image" <?php echo ! $has_image_mobile ? 'style="display:none;"' : ''; ?>>Remove</button>
+                            <button class="button sb-upload-image hide-not-sender" <?php echo $has_image_mobile ? 'style="display:none;"' : ''; ?>>Add Image</button>
+                            <button class="button sb-remove-image hide-not-sender" <?php echo ! $has_image_mobile ? 'style="display:none;"' : ''; ?>>Remove</button>
                         </div>
                     </div>
                 </div>
@@ -250,13 +272,13 @@ function sb_render_slide_row($index, $data)
                     <div class="sb-field" style="width: 20%;">
                         <label>External URL</label>
                         <div class="sb-field-checkbox">
-                            <input type="checkbox" class="sb-external-url-checkbox" name="slide_banner_data[<?php echo $index; ?>][external_url]" value="1" <?php checked($external_url, '1'); ?>>
+                            <input type="checkbox" class="sb-external-url-checkbox<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" name="slide_banner_data[<?php echo $index; ?>][external_url]" value="1" <?php checked($external_url, '1'); ?><?php if ( ! $is_sender ) { ?> onclick="return false;"<?php } ?>>
                             Enable
                         </div>
                     </div>
                     <div class="sb-field" style="width: 80%;">
                         <label>URL</label>
-                        <input type="text" name="slide_banner_data[<?php echo $index; ?>][url]" value="<?php echo esc_attr($url); ?>" placeholder="<?php echo ($external_url === '1') ? 'https://...' : '/promotion/'; ?>" class="widefat sb-url-input">
+                        <input type="text" name="slide_banner_data[<?php echo $index; ?>][url]" value="<?php echo esc_attr($url); ?>" placeholder="<?php echo ($external_url === '1') ? 'https://...' : '/promotion/'; ?>" class="widefat sb-url-input<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                     </div>
                 </div>
                 <!-- New Tab -->
@@ -264,7 +286,7 @@ function sb_render_slide_row($index, $data)
                     <div class="sb-field">
                         <label>Open link new window</label>
                         <div class="sb-field-checkbox">
-                            <input type="checkbox" name="slide_banner_data[<?php echo $index; ?>][new_tab]" value="1" <?php checked($new_tab, '1'); ?>>
+                            <input type="checkbox" name="slide_banner_data[<?php echo $index; ?>][new_tab]" value="1" <?php checked($new_tab, '1'); ?><?php if ( ! $is_sender ) { ?> class="hide-click" onclick="return false;"<?php } ?>>
                             Enable
                         </div>
                     </div>
@@ -331,10 +353,10 @@ function sb_frontend_assets()
 {
     global $post;
     if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'slide_banner')) {
-        wp_enqueue_style('flickity-style', 'https://unpkg.com/flickity@2/dist/flickity.min.css', array(), '2.0');
-        wp_enqueue_style('slide-banner-style', get_stylesheet_directory_uri() . '/assets/css/slide_banner.css', array(), '1.0');
-        wp_enqueue_script('flickity-script', 'https://unpkg.com/flickity@2/dist/flickity.pkgd.min.js', array(), '2.0', true);
-        wp_enqueue_script('slide-banner-script', get_stylesheet_directory_uri() . '/assets/js/slide_banner.js', array(), '1.0', true);
+        wp_enqueue_style('flickity-style', 'https://unpkg.com/flickity@2/dist/flickity.min.css', array(), '1.0');
+        wp_enqueue_style('slide-banner-style', get_stylesheet_directory_uri() . '/assets/css/slide_banner.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/slide_banner.css' ));
+        wp_enqueue_script('flickity-script', 'https://unpkg.com/flickity@2/dist/flickity.pkgd.min.js', array(), '1.0', true);
+        wp_enqueue_script('slide-banner-script', get_stylesheet_directory_uri() . '/assets/js/slide_banner.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/slide_banner.js' ), true);
     }
 }
-add_action('wp_enqueue_scripts', 'sb_frontend_assets');
+add_action('wp_enqueue_scripts', 'sb_frontend_assets', 99);

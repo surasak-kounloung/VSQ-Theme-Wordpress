@@ -1,0 +1,229 @@
+$max-viewport-nb: 1920;
+$max-viewport-mb: 768;
+@function get-vw-nb($target) {
+    $vw-context: ($max-viewport-nb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
+}
+@function get-vw-mb($target) {
+    $vw-context: ($max-viewport-mb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
+}
+
+.cta-footer-wrapper {
+    position: fixed;
+    right: 0;
+    bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: auto;
+    gap: 16px;
+    padding: 0 20px;
+    z-index: 98;
+    transition: bottom .8s ease;
+}
+.cta-footer-wrapper.pdpa-hide {
+    // bottom: 20px;
+    bottom: 69px;
+}
+.cta-footer-item {
+    display: flex;
+    position: relative;
+    padding: 2px;
+    width: auto;
+    height: 50px;
+    overflow: hidden;
+    border-radius: 50px;
+    animation: gradient 2.5s linear infinite;
+    box-shadow: 0 2px 3px 1px #00000059;
+    transition: 0.32s;
+}
+.cta-footer-content {
+    display: flex;
+    overflow: hidden;
+    border-radius: 50px;
+}
+.cta-footer-content, 
+.cta-footer-image, 
+.cta-footer-image img {
+    width: auto;
+    height: 100%;
+}
+.cta-footer-image img {
+    max-width: unset;
+}
+.btn-cta-line .cta-footer-content {
+    padding: 3px 6px;
+    background-color: #00c300;
+}
+.btn-cta-line .cta-footer-content::before, 
+.btn-cta-line .cta-footer-content::after {
+    content: "หมอตอบเองครับ";
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 88px;
+    height: 100%;
+    font-family: "Kanit", sans-serif;
+    font-weight: 400;
+    font-size: 18px;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: 1.5px;
+    text-align: left;
+    padding-right: 10px;
+    margin-left: 6px;
+}
+.btn-cta-line .cta-footer-content::before {
+    content: "";
+    display: none;
+}
+.cta-footer-en .btn-cta-line .cta-footer-content {
+    width: 144px;
+}
+.cta-footer-en .btn-cta-line .cta-footer-content::before, 
+.cta-footer-en .btn-cta-line .cta-footer-content::after {
+    width: auto;
+    height: auto;
+}
+.cta-footer-en .btn-cta-line .cta-footer-content::before {
+    content: "Chat";
+    display: flex;
+    position: absolute;
+    top: 8px;
+    left: 55px;
+    font-size: 17px;
+    letter-spacing: normal;
+    margin-left: 0;
+    order: 2;
+}
+.cta-footer-en .btn-cta-line .cta-footer-content::after {
+    content: "with Doctor";
+    position: absolute;
+    bottom: 8px;
+    left: 55px;
+    font-size: 14px;
+    letter-spacing: normal;
+    margin-left: 0;
+    order: 3;
+}
+.cta-footer-en .btn-cta-line .cta-footer-image {
+    order: 1;
+}
+@media (max-width: 1919px) {
+    .cta-footer-wrapper {
+        bottom: get-vw-nb(20px);
+        gap: get-vw-nb(16px);
+        padding: 0 get-vw-nb(20px);
+    }
+    .cta-footer-wrapper.pdpa-hide {
+        // bottom: 20px;
+        bottom: get-vw-nb(69px);
+    }
+    .cta-footer-item {
+        padding: get-vw-nb(2px);
+        height: get-vw-nb(50px);
+        border-radius: get-vw-nb(50px);
+        box-shadow: 0 get-vw-nb(2px) get-vw-nb(3px) 1px #00000059;
+    }
+    .cta-footer-content {
+        border-radius: get-vw-nb(50px);
+    }
+    .btn-cta-line .cta-footer-content {
+        padding: get-vw-nb(3px) get-vw-nb(6px);
+    }
+    .btn-cta-line .cta-footer-content::before, 
+    .btn-cta-line .cta-footer-content::after {
+        width: get-vw-nb(88px);
+        font-size: get-vw-nb(18px);
+        letter-spacing: get-vw-nb(1.5px);
+        padding-right: get-vw-nb(10px);
+        margin-left: get-vw-nb(6px);
+    }
+    .cta-footer-en .btn-cta-line .cta-footer-content {
+        width: get-vw-nb(144px);
+    }
+    .cta-footer-en .btn-cta-line .cta-footer-content::before {
+        top: get-vw-nb(8px);
+        left: get-vw-nb(55px);
+        font-size: get-vw-nb(17px);
+    }
+    .cta-footer-en .btn-cta-line .cta-footer-content::after {
+        bottom: get-vw-nb(8px);
+        left: get-vw-nb(55px);
+        font-size: get-vw-nb(14px);
+    }
+}
+@media (max-width: 767px) {
+    .cta-footer-wrapper {
+        bottom: get-vw-mb(20px);
+        gap: get-vw-mb(20px);
+        padding: 0 get-vw-mb(20px);
+    }
+    .cta-footer-wrapper.pdpa-hide {
+        // bottom: 20px;
+        bottom: get-vw-mb(69px);
+    }
+    .cta-footer-item {
+        padding: get-vw-mb(2px);
+        height: get-vw-mb(75px);
+        border-radius: get-vw-mb(50px);
+        box-shadow: 0 get-vw-mb(2px) get-vw-mb(6px) 1px #00000059;
+    }
+    .cta-footer-item.icon-order-1, 
+    .cta-footer-item.icon-order-2,
+    .cta-footer-item.icon-order-3 {
+        position: absolute;
+        right: get-vw-mb(20px);
+        width: get-vw-mb(88px);
+        height: get-vw-mb(88px);
+    }
+    .cta-footer-item.icon-order-1 {
+        bottom: get-vw-mb(94px);
+    }
+    .cta-footer-item.icon-order-2 {
+        bottom: get-vw-mb(198px);
+    }
+    .cta-footer-item.icon-order-3 {
+        bottom: get-vw-mb(300px);
+    }
+    .cta-footer-content {
+        border-radius: get-vw-mb(50px);
+    }
+    .cta-footer-item.btn-cta-fb .cta-footer-image {
+        margin-left: get-vw-mb(-23px);
+    }
+    .btn-cta-line .cta-footer-content {
+        padding: get-vw-mb(4px) get-vw-mb(6px);
+    }
+    .btn-cta-line .cta-footer-content::before, 
+    .btn-cta-line .cta-footer-content::after {
+        width: get-vw-mb(120px);
+        font-size: get-vw-mb(26px);
+        line-height: 1.1;
+        letter-spacing: get-vw-mb(2px);
+        padding-right: get-vw-mb(8px);
+        margin-left: get-vw-mb(6px);
+    }
+    .cta-footer-en .btn-cta-line .cta-footer-content {
+        width: get-vw-mb(202px);
+    }
+    .cta-footer-en .btn-cta-line .cta-footer-content::before {
+        top: get-vw-mb(10px);
+        left: get-vw-mb(76px);
+        font-size: get-vw-mb(28px);
+    }
+    .cta-footer-en .btn-cta-line .cta-footer-content::after {
+        bottom: get-vw-mb(11px);
+        left: get-vw-mb(76px);
+        font-size: get-vw-mb(20px);
+    }
+}
+@keyframes gradient {
+    from {
+        background-position: -0%;
+    }
+    to {
+        background-position: -90%;
+    }
+}

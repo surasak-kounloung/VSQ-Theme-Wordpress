@@ -1,23 +1,23 @@
 /* Main Layout */
-.sb-repeater-container {
+.sl-repeater-container {
     background: #fff;
     border: 1px solid #ccd0d4;
     border-bottom: none; /* Rows handle border */
 }
 
 /* Repeater Row Structure */
-.sb-repeater-row {
+.sl-repeater-row {
     display: flex;
     border-bottom: 1px solid #ccd0d4;
     background: #f9f9f9;
 }
 
-.sb-repeater-row:nth-child(even) {
+.sl-repeater-row:nth-child(even) {
     background: #fff;
 }
 
 /* Left Handle Column */
-.sb-row-header {
+.sl-row-header {
     width: 40px;
     background: #f1f1f1;
     border-right: 1px solid #ccd0d4;
@@ -29,23 +29,23 @@
     flex-shrink: 0;
 }
 
-.sb-row-handle {
+.sl-row-handle {
     cursor: move;
     color: #aaa;
     margin-bottom: 5px;
 }
 
-.sb-row-handle:hover {
+.sl-row-handle:hover {
     color: #333;
 }
 
-.sb-row-number {
+.sl-row-number {
     font-weight: bold;
     color: #666;
     margin-bottom: 10px;
 }
 
-.sb-remove-row {
+.sl-remove-row {
     cursor: pointer;
     color: #a00;
     margin-top: auto; /* Push to bottom if height allows, or just margin */
@@ -53,53 +53,49 @@
     opacity: 0.5;
 }
 
-.sb-remove-row:hover {
+.sl-remove-row:hover {
     opacity: 1;
     color: #dc3232;
 }
 
 /* Right Content Column */
-.sb-row-content {
+.sl-row-content {
     flex-grow: 1;
     padding: 15px;
 }
 
-.sb-row-columns {
+.sl-row-columns {
     display: flex;
     gap: 15px;
     margin-bottom: 15px;
 }
 
-.sb-row-columns:last-child {
+.sl-row-columns:last-child {
     margin-bottom: 0;
 }
 
-.sb-column {
+.sl-column {
     box-sizing: border-box;
 }
 
 /* Fields */
-.sb-field label {
+.sl-field label {
     display: block;
     font-weight: 600;
     margin-bottom: 8px;
     color: #444;
 }
 
-.sb-field input[type="text"].widefat {
+.sl-field input[type="text"].widefat {
     width: 100%;
 }
 
-.sb-field-checkbox {
+.sl-field-checkbox {
     padding-top: 6px;
 }
 
-input[type=text]::placeholder {
-    color: #aaa;
-}
-
 /* Image Preview */
-.sb-image-preview-wrapper {
+.sl-image-preview-wrapper {
     background: #f0f0f1;
     border: 1px dashed #ccc;
     padding: 10px;
@@ -111,7 +107,7 @@ input[type=text]::placeholder {
     justify-content: center;
 }
 
-.sb-image-preview img {
+.sl-image-preview img {
     max-width: 100%;
     height: auto;
     display: block;
@@ -119,12 +115,12 @@ input[type=text]::placeholder {
     max-height: 200px;
 }
 
-.sb-upload-image, .sb-remove-image {
+.sl-upload-image, .sl-remove-image {
     margin-top: 5px !important;
 }
 
 /* Add Button Area */
-.sb-actions {
+.sl-actions {
     background: #f1f1f1;
     border: 1px solid #ccd0d4;
     border-top: none;

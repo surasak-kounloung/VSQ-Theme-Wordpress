@@ -1,5 +1,5 @@
-.dt-repeater-container {
-    margin-top: 20px;
+.postbox .inside {
+    padding: 12px;
 }
 
 .dt-repeater-row {
@@ -106,6 +106,107 @@
     font-size: 20px;
     width: 20px;
     height: 20px;
+}
+
+/* Select2 Adjustments */
+.select2-container .select2-selection--single {
+    height: 35px;
+    border-color: #8c8f94;
+}
+
+.select2-container input[type=date], 
+.select2-container input[type=datetime-local], 
+.select2-container input[type=datetime], 
+.select2-container input[type=email], input[type=month], 
+.select2-container input[type=number], input[type=password], 
+.select2-container input[type=search], 
+.select2-container input[type=tel], 
+.select2-container input[type=text], 
+.select2-container input[type=time], 
+.select2-container input[type=url], 
+.select2-container input[type=week] {
+    line-height: 1;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    font-size: 14px;
+    line-height: 30px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    right: 5px;
+    height: 34px;
+}
+
+.select2-results__options {
+    max-height: 186px !important; 
+}
+
+.select2-results__option {
+    font-size: 14px;
+    padding: 6px;
+    margin-bottom: 0;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    display: block;
+    padding-bottom: 4px;
+    padding-top: 1px;
+    line-height: 1;
+}
+
+.select2-container .select2-search--inline .select2-search__field {
+    margin-top: 7px;
+}
+
+.dt-field-col .select2-container--default .select2-selection--multiple {
+    padding-bottom: 0;
+}
+
+.dt-field-col .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    height: 100%;
+    line-height: 1;
+    padding-bottom: 3px;
+}
+
+.dt-field-col .select2-container .select2-selection--multiple .select2-selection__rendered {
+    display: inline-block;
+    vertical-align: top;
+    min-height: 30px;
+    margin: 0;
+}
+
+.dt-field-col .select2-container--default .select2-selection--multiple .select2-search--inline {
+    display: inline-block;
+    vertical-align: top;
+    min-height: 30px;
+}
+
+.dt-field-select .category-select {
+    max-height: 34px;
+}
+
+.dt-field-select .category-select option {
+    height: 27px;
+    padding: 8px 0 0;
+    opacity: 0;
+}
+
+.select2-container--disabled {
+    pointer-events: none;
+}
+
+.select2-container--disabled .select2-selection--multiple.select2-selection--clearable {
+    padding-right: 5px;
+}
+
+.select2-container--disabled .select2-selection--multiple .select2-selection__clear {
+    display: none;
+}
+
+.select2-container--default.select2-container--disabled .select2-selection--multiple .select2-selection__choice, 
+.select2-container--disabled .select2-selection--multiple .select2-selection__choice {
+    padding-left: 5px;
 }
 
 /* Shortcode Usage Box */

@@ -16,7 +16,7 @@ function dt_add_admin_menu() {
         'doctor-table-settings',
         'dt_options_page_html',
         'dashicons-editor-table',
-        41
+        42
     );
 }
 add_action( 'admin_menu', 'dt_add_admin_menu' );
@@ -40,10 +40,14 @@ function dt_admin_assets( $hook ) {
         filemtime( get_stylesheet_directory() . '/assets/css/admin/admin-doctors-table.css' ) 
     );
 
+    // Select2
+    wp_enqueue_style( 'select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css' );
+    wp_enqueue_script( 'select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', array('jquery'), '4.1.0', true );
+
     wp_enqueue_script( 
         'dt-admin-js', 
         get_stylesheet_directory_uri() . '/assets/js/admin/admin-doctors-table.js', 
-        array( 'jquery', 'jquery-ui-sortable' ), 
+        array( 'jquery', 'jquery-ui-sortable', 'select2' ), 
         filemtime( get_stylesheet_directory() . '/assets/js/admin/admin-doctors-table.js' ), 
         true 
     );
@@ -87,6 +91,16 @@ function dt_options_page_html() {
                     
                     <!-- Right Sidebar (Publish Box) -->
                     <div id="postbox-container-1" class="postbox-container">
+                        <?php 
+                        // Check if user is a sender
+                        $is_sender = false;
+                        if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+                            $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+                            $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+                        } 
+                        
+                        if ( $is_sender ) {
+                        ?>
                         <div id="side-sortables" class="meta-box-sortables">
                             <div id="submitdiv" class="postbox">
                                 <div class="postbox-header">
@@ -106,6 +120,7 @@ function dt_options_page_html() {
                                 </div>
                             </div>
                         </div>
+                        <?php } ?>
 
                         <!-- Shortcode Usage Box -->
                         <div class="postbox">
@@ -144,16 +159,16 @@ function dt_options_page_html() {
                                     <div class="dt-field-row">
                                         <div class="dt-field-col" style="width: 100%;">
                                             <label>Branch count</label>
-                                            <input type="text" name="doctors_table_data[branch_count]" value="<?php echo esc_attr($branch_count); ?>">
+                                            <input type="text" name="doctors_table_data[branch_count]" value="<?php echo esc_attr($branch_count); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                                         </div>
                                     </div>
-                                    <div class="dt-field-row">
+                                    <div class="dt-field-row" style="margin-bottom: 3px;">
                                         <?php for($i=1; $i<=8; $i++): 
                                             $val = isset($head_tables[$i]) ? $head_tables[$i] : '';
                                         ?>
                                             <div class="dt-field-col col-1-8">
                                                 <label>Head Table <?php echo $i; ?></label>
-                                                <input type="text" name="doctors_table_data[head_table][<?php echo $i; ?>]" value="<?php echo esc_attr($val); ?>">
+                                                <input type="text" name="doctors_table_data[head_table][<?php echo $i; ?>]" value="<?php echo esc_attr($val); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                                             </div>
                                         <?php endfor; ?>
                                     </div>
@@ -177,9 +192,11 @@ function dt_options_page_html() {
                                         ?>
                                     </div>
 
+                                    <?php if ( $is_sender ) { ?>
                                     <div class="dt-actions" style="margin-top: 20px;">
                                         <button class="button button-primary dt-repeater-add">Add Row</button>
                                     </div>
+                                    <?php } ?>
 
                                 </div>
                             </div>
@@ -191,9 +208,9 @@ function dt_options_page_html() {
                                 </div>
                                 <div class="inside">
                                     <div class="dt-field-row">
-                                        <div class="dt-field-col" style="width: 100%;">
+                                        <div class="dt-field-col" style="width: 100%; margin-bottom: 0;">
                                             <label>Update Date Table</label>
-                                            <input type="text" name="doctors_table_data[update_date_doctor_table]" value="<?php echo esc_attr($update_date_doctor_table); ?>">
+                                            <input type="text" name="doctors_table_data[update_date_doctor_table]" value="<?php echo esc_attr($update_date_doctor_table); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                                         </div>
                                     </div>
                                 </div>
@@ -226,15 +243,24 @@ function dt_render_row( $index, $data ) {
     $branch_contact_url = isset( $data['branch_contact_url'] ) ? $data['branch_contact_url'] : '';
     
     $days = isset( $data['days'] ) ? $data['days'] : array();
+
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    } 
     
     ?>
     <div class="dt-repeater-row">
-        <div class="dt-row-header">
+        <div class="dt-row-header<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
             <span class="dt-row-handle dashicons dashicons-menu"></span>
             <span class="dt-row-title">Branch Item</span>
             <div class="dt-row-actions">
                  <span class="dt-toggle-row dashicons dashicons-minus"></span>
+                 <?php if ( $is_sender ) { ?>
                  <span class="dt-remove-row dashicons dashicons-no-alt" title="Remove row"></span>
+                 <?php } ?>
             </div>
         </div>
         <div class="dt-row-content">
@@ -242,41 +268,90 @@ function dt_render_row( $index, $data ) {
             <div class="dt-field-row">
                 <div class="dt-field-col col-1-3">
                     <label>Branch name</label>
-                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_name]" value="<?php echo esc_attr( $branch_name ); ?>">
+                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_name]" value="<?php echo esc_attr( $branch_name ); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                 </div>
                 <div class="dt-field-col col-1-3">
                     <label>Branch Close</label>
                     <div class="dt-field-checkbox">
-                        <input type="checkbox" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_close]" value="1" <?php checked( $branch_close, '1' ); ?>> Close
+                        <input type="checkbox" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_close]" value="1" <?php checked( $branch_close, '1' ); ?><?php if ( ! $is_sender ) { ?> class="hide-click" onclick="return false;"<?php } ?>> Close
                     </div>
                 </div>
                 <div class="dt-field-col col-1-3">
                     <label>Branch Close Text</label>
-                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_close_text]" value="<?php echo esc_attr( $branch_close_text ); ?>">
+                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_close_text]" value="<?php echo esc_attr( $branch_close_text ); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                 </div>
             </div>
 
             <!-- Row 2: Days -->
             <div class="dt-field-row">
-                <?php for($d=1; $d<=7; $d++): 
-                    $val = isset($days[$d]) ? $days[$d] : '';
+                <?php 
+                $day_labels = [
+                    1 => 'Monday',
+                    2 => 'Tuesday',
+                    3 => 'Wednesday',
+                    4 => 'Thursday',
+                    5 => 'Friday',
+                    6 => 'Saturday',
+                    7 => 'Sunday',
+                ];
+
+                // Fetch doctors if not already fetched
+                static $doctors = null;
+                if ( is_null( $doctors ) ) {
+                    $doctors = get_posts( array(
+                        'post_type'      => 'page_doctor',
+                        'posts_per_page' => -1,
+                        'post_status'    => 'publish',
+                        'orderby'        => 'title',
+                        'order'          => 'ASC',
+                    ) );
+                }
+
+                for($d=1; $d<=7; $d++): 
+                    $val = isset($days[$d]) ? $days[$d] : array();
+                    // Ensure $val is an array (handle legacy single value)
+                    if ( ! is_array( $val ) ) {
+                        $val = $val ? array( $val ) : array();
+                    }
                 ?>
                     <div class="dt-field-col col-1-7">
-                        <label>Day <?php echo $d; ?></label>
-                        <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][days][<?php echo $d; ?>]" value="<?php echo esc_attr( $val ); ?>">
+                        <label><?php echo $day_labels[$d]; ?></label>
+                        <select name="doctors_table_data[body_list][<?php echo $index; ?>][days][<?php echo $d; ?>][]" class="dt-select2-doctors<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" multiple="multiple" style="width: 100%;"<?php if ( ! $is_sender ) { ?> disabled<?php } ?>>
+                            <?php if ( $doctors ) : ?>
+                                <?php foreach ( $doctors as $doctor ) : ?>
+                                    <?php 
+                                    // Check if selected by ID or Title (legacy)
+                                    // Use strict comparison false for in_array to match string ID with int ID if needed, 
+                                    // but better to be safe. $val comes from DB, might be strings. $doctor->ID is string (WP post object).
+                                    $is_selected = in_array( $doctor->ID, $val ) || in_array( $doctor->post_title, $val );
+                                    
+                                    $nickname = get_post_meta( $doctor->ID, '_doctor_nickname', true );
+                                    $display_name = $nickname ? $nickname : $doctor->post_title;
+                                    ?>
+                                    <option value="<?php echo esc_attr( $doctor->ID ); ?>" <?php selected( $is_selected, true ); ?>>
+                                        <?php echo esc_html( $display_name ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                        <?php if ( ! $is_sender ) : ?>
+                            <?php foreach( $val as $v ): ?>
+                                <input type="hidden" name="doctors_table_data[body_list][<?php echo $index; ?>][days][<?php echo $d; ?>][]" value="<?php echo esc_attr($v); ?>">
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 <?php endfor; ?>
             </div>
 
             <!-- Row 3: Contact -->
-            <div class="dt-field-row">
+            <div class="dt-field-row" style="margin-bottom: 0;">
                 <div class="dt-field-col col-1-3">
                     <label>Branch Contact</label>
-                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_contact]" value="<?php echo esc_attr( $branch_contact ); ?>">
+                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_contact]" value="<?php echo esc_attr( $branch_contact ); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                 </div>
                 <div class="dt-field-col col-3-4" style="width: 66.66%;">
                     <label>Branch Contact URL</label>
-                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_contact_url]" value="<?php echo esc_attr( $branch_contact_url ); ?>">
+                    <input type="text" name="doctors_table_data[body_list][<?php echo $index; ?>][branch_contact_url]" value="<?php echo esc_attr( $branch_contact_url ); ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
                 </div>
             </div>
 
@@ -333,10 +408,35 @@ function dt_doctors_table_shortcode() {
                             <?php 
                             // Days 1-7
                             for($d=1; $d<=7; $d++): 
-                                $doctor = isset( $row['days'][$d] ) ? $row['days'][$d] : '';
+                                $doctor_vals = isset( $row['days'][$d] ) ? $row['days'][$d] : array();
+                                if ( ! is_array( $doctor_vals ) ) {
+                                    $doctor_vals = $doctor_vals ? array( $doctor_vals ) : array();
+                                }
+
                                 $header_label = isset($head_table[$d]) ? $head_table[$d] : "Day $d";
+                                
+                                $display_texts = array();
+                                foreach ( $doctor_vals as $doctor_val ) {
+                                    if ( $doctor_val ) {
+                                        if ( is_numeric( $doctor_val ) ) {
+                                            // It is an ID
+                                            $nickname = get_post_meta( $doctor_val, '_doctor_nickname', true );
+                                            $display_texts[] = $nickname ? $nickname : get_the_title( $doctor_val );
+                                        } else {
+                                            // It is a Title (Legacy)
+                                            $post = get_page_by_title( $doctor_val, OBJECT, 'page_doctor' );
+                                            if ( $post ) {
+                                                $nickname = get_post_meta( $post->ID, '_doctor_nickname', true );
+                                                $display_texts[] = $nickname ? $nickname : $post->post_title;
+                                            } else {
+                                                $display_texts[] = $doctor_val;
+                                            }
+                                        }
+                                    }
+                                }
+                                $display_text = implode( ', ', $display_texts );
                             ?>
-                                <td class="dt-col-day" data-label="<?php echo esc_attr($header_label); ?>"><?php echo esc_html( $doctor ); ?></td>
+                                <td class="dt-col-day" data-label="<?php echo esc_attr($header_label); ?>"><?php echo esc_html( $display_text ); ?></td>
                             <?php endfor; ?>
 
                             <!-- Contact (Head Table 8) -->

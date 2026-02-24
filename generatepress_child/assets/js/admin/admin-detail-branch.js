@@ -1,41 +1,19 @@
 jQuery(document).ready(function($) {
 
-    // Init Select2
-    function initSelect2(context) {
-        if ($.fn.select2) {
-            var selector = '.dt-select2-doctors';
-            var target = context ? $(context).find(selector) : $(selector);
-            
-            target.select2({
-                width: '100%',
-                placeholder: 'Select',
-                allowClear: true
-            });
-        }
-    }
-
-    // Initial call
-    initSelect2();
-
     // Repeater Logic
     $('.dt-repeater-add').on('click', function(e) {
         e.preventDefault();
         var container = $('.dt-repeater-container');
         var index = container.find('.dt-repeater-row').length;
-        var template = $('#dt-repeater-template').html();
+        var template = $('#dt-repeater-youtube-template').html();
         
         // Simple replace for index might be risky if we use {{index}} inside value attributes that might contain similar strings, 
         // but for empty template it's fine.
         // We will use a regex to replace index placeholders.
         template = template.replace(/{{index}}/g, index);
         
-        var $newRow = $(template);
-        container.append($newRow);
-        
+        container.append(template);
         dt_update_indexes();
-        
-        // Init Select2 for new row
-        initSelect2($newRow);
     });
 
     // Remove Row
@@ -88,8 +66,8 @@ jQuery(document).ready(function($) {
                 var name = $(this).attr('name');
                 if (name) {
                     // Regex to replace the first index [0], [1] etc.
-                    // Assumes format dt_doctors_data[body_list][INDEX][field]
-                    var newName = name.replace(/\[body_list\]\[\d+\]/, '[body_list][' + i + ']');
+                    // Assumes format dt_doctors_data[youtube_list][INDEX][field]
+                    var newName = name.replace(/\[youtube_list\]\[\d+\]/, '[youtube_list][' + i + ']');
                     $(this).attr('name', newName);
                 }
             });

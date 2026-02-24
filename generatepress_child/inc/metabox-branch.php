@@ -29,7 +29,7 @@ function branch_render_meta_box( $post ) {
     $branch_thumbnail_name = get_post_meta( $post->ID, '_branch_thumbnail_name', true );
     $branch_image_360 = get_post_meta( $post->ID, '_branch_image_360', true );
     $branch_location_image = get_post_meta( $post->ID, '_branch_location_image', true );
-    $branch_order = get_post_meta( $post->ID, '_branch_order', true );
+    // $branch_order = get_post_meta( $post->ID, '_branch_order', true );
     $branch_about = get_post_meta( $post->ID, '_branch_about', true );
     $branch_title = get_post_meta( $post->ID, '_branch_title', true );
     $branch_title_floor = get_post_meta( $post->ID, '_branch_title_floor', true );
@@ -69,6 +69,13 @@ function branch_render_meta_box( $post ) {
         $branch_opening_time = array();
     }
 
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    } 
+
     ?>
     <div class="admin-meta-wrapper">
         
@@ -92,13 +99,17 @@ function branch_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_thumbnail ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt thumbnail-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt thumbnail-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="branch_add_thumbnail"><?php echo empty($branch_thumbnail) ? 'Add Thumbnail' : 'Change Thumbnail'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
@@ -122,13 +133,17 @@ function branch_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_thumbnail_name ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt thumbnail-name-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt thumbnail-name-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="branch_add_thumbnail_name"><?php echo empty($branch_thumbnail_name) ? 'Add Thumbnail' : 'Change Thumbnail'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
@@ -140,18 +155,16 @@ function branch_render_meta_box( $post ) {
                 <!-- About Branch -->
                 <div class="admin-field-row">
                     <label for="branch_about"><strong>About</strong></label>
-                    <div class="admin-editor-wrapper">
+                    <div class="admin-editor-wrapper<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
                     <?php 
-                    wp_editor( $branch_about, 'branch_about', array(
+                    $editor_branch_about_settings = array(
                         'textarea_name' => 'branch_about',
                         'media_buttons' => false,
                         'textarea_rows' => 5,
-                        'teeny' => false, // Set to false to allow custom toolbar
+                        'teeny' => false,
                         'quicktags' => true,
                         'drag_drop_upload' => false,
                         'tinymce' => array(
-                            'toolbar1' => 'formatselect,bold,italic,bullist,numlist,link,unlink,undo,redo', // Add formatselect for headings
-                            'block_formats' => 'Paragraph=p;Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4;Heading 5=h5;Heading 6=h6',
                             'wp_autoresize_on' => false,
                             'resize' => false,
                             'force_p_newlines' => false,
@@ -163,7 +176,19 @@ function branch_render_meta_box( $post ) {
                         ),
                         // บังคับให้เริ่มที่โหมด HTML เสมอ แก้ไข error setBaseAndExtent
                         'default_editor' => 'html',
-                    )); 
+                    );
+
+                    if ( ! $is_sender ) {
+                        $editor_branch_about_settings['tinymce']['readonly'] = true;
+                    }
+
+                    wp_editor( $branch_about, 'branch_about', $editor_branch_about_settings );
+
+                    if ( ! $is_sender ) {
+                        ?>
+                        <script>jQuery(document).ready(function($){ $('#branch_about').prop('readonly', true); });</script>
+                        <?php
+                    }
                     ?>
                     </div>
                 </div>
@@ -185,57 +210,61 @@ function branch_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_image_360 ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 500px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt image-360-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt image-360-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="branch_add_image_360"><?php echo empty($branch_image_360) ? 'Add Image' : 'Change Image'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
 
             <div class="w-50 pl-30">
                 <!-- Order -->
-                <div class="admin-field-row">
+                <!-- <div class="admin-field-row">
                     <label for="branch_order"><strong>Order</strong></label>
-                    <input type="number" name="branch_order" id="branch_order" value="<?php echo esc_attr( $branch_order ); ?>" class="widefat" style="width: 80px;">
-                </div>
+                    <input type="number" name="branch_order" id="branch_order" value="<?php echo esc_attr( $branch_order ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?> style="width: 80px;">
+                </div> -->
                 <!-- Title -->
                 <div class="admin-field-row">
                     <label for="branch_title"><strong>Title</strong></label>
-                    <input type="text" name="branch_title" id="branch_title" value="<?php echo esc_attr( $branch_title ); ?>" class="widefat">
+                    <input type="text" name="branch_title" id="branch_title" value="<?php echo esc_attr( $branch_title ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Title Floor -->
                 <div class="admin-field-row">
                     <label for="branch_title_floor"><strong>Title Floor</strong></label>
-                    <input type="text" name="branch_title_floor" id="branch_title_floor" value="<?php echo esc_attr( $branch_title_floor ); ?>" class="widefat">
+                    <input type="text" name="branch_title_floor" id="branch_title_floor" value="<?php echo esc_attr( $branch_title_floor ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Telephone -->
                 <div class="admin-field-row">
                     <label for="branch_telephone"><strong>Telephone</strong></label>
-                    <input type="text" name="branch_telephone" id="branch_telephone" value="<?php echo esc_attr( $branch_telephone ); ?>" class="widefat">
+                    <input type="text" name="branch_telephone" id="branch_telephone" value="<?php echo esc_attr( $branch_telephone ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- ID LINE -->
                 <div class="admin-field-row">
                     <label for="branch_id_line"><strong>ID LINE</strong></label>
-                    <input type="text" name="branch_id_line" id="branch_id_line" value="<?php echo esc_attr( $branch_id_line ); ?>" class="widefat">
+                    <input type="text" name="branch_id_line" id="branch_id_line" value="<?php echo esc_attr( $branch_id_line ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- URL LINE -->
                 <div class="admin-field-row">
                     <label for="branch_url_line"><strong>URL LINE</strong></label>
-                    <input type="text" name="branch_url_line" id="branch_url_line" value="<?php echo esc_attr( $branch_url_line ); ?>" class="widefat">
+                    <input type="text" name="branch_url_line" id="branch_url_line" value="<?php echo esc_attr( $branch_url_line ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Google Map -->
                 <div class="admin-field-row">
                     <label for="branch_google_map"><strong>Google Map</strong></label>
-                    <input type="text" name="branch_google_map" id="branch_google_map" value="<?php echo esc_attr( $branch_google_map ); ?>" class="widefat">
+                    <input type="text" name="branch_google_map" id="branch_google_map" value="<?php echo esc_attr( $branch_google_map ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Google Map iframe -->
                 <div class="admin-field-row">
                     <label for="branch_google_map_iframe"><strong>Google Map iframe</strong></label>
-                    <textarea name="branch_google_map_iframe" id="branch_google_map_iframe" class="widefat" rows="5"><?php echo esc_textarea( $branch_google_map_iframe ); ?></textarea>
+                    <textarea name="branch_google_map_iframe" id="branch_google_map_iframe" rows="5" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>><?php echo esc_textarea( $branch_google_map_iframe ); ?></textarea>
                 </div>
             </div>
         </div>
@@ -261,13 +290,17 @@ function branch_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $branch_location_image ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 350px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt location-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt location-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="branch_add_location_image"><?php echo empty($branch_location_image) ? 'Add Image' : 'Change Image'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
                 <!-- List of Opening Time -->
@@ -280,7 +313,9 @@ function branch_render_meta_box( $post ) {
                                     <th width="30"></th>
                                     <th>Day</th>
                                     <th>Time</th>
+                                    <?php if ( $is_sender ) { ?>
                                     <th width="30"></th>
+                                    <?php } ?>
                                 </tr>
                             </thead>
                             <tbody id="opening-time-table-body">
@@ -293,10 +328,12 @@ function branch_render_meta_box( $post ) {
                                         $time = isset( $row['time'] ) ? $row['time'] : '';
                                         ?>
                                         <tr class="admin-table-row">
-                                            <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][day]" value="<?php echo esc_attr( $day ); ?>" class="widefat"></td>
-                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][time]" value="<?php echo esc_attr( $time ); ?>" class="widefat"></td>
+                                            <td class="row-index<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
+                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][day]" value="<?php echo esc_attr( $day ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                            <td><input type="text" name="branch_opening_time[<?php echo $index; ?>][time]" value="<?php echo esc_attr( $time ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                            <?php if ( $is_sender ) { ?>
                                             <td><span class="remove-table-row dashicons dashicons-no-alt remove-opening-time-row"></span></td>
+                                            <?php } ?>
                                         </tr>
                                         <?php
                                     }
@@ -304,25 +341,29 @@ function branch_render_meta_box( $post ) {
                                     // Default 1 row if empty
                                     ?>
                                     <tr class="admin-table-row">
-                                        <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                        <td><input type="text" name="branch_opening_time[0][day]" value="" class="widefat"></td>
-                                        <td><input type="text" name="branch_opening_time[0][time]" value="" class="widefat"></td>
+                                        <td class="row-index<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
+                                        <td><input type="text" name="branch_opening_time[0][day]" value="" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                        <td><input type="text" name="branch_opening_time[0][time]" value="" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                        <?php if ( $is_sender ) { ?>
                                         <td><span class="remove-table-row dashicons dashicons-no-alt remove-opening-time-row"></span></td>
+                                        <?php } ?>
                                     </tr>
                                     <?php
                                 }
                                 ?>
                             </tbody>
                         </table>
+                        <?php if ( $is_sender ) { ?>
                         <div class="text-right" style="margin-top: 10px;">
                             <button type="button" class="button button-primary" id="add-opening-time-row">Add Row</button>
                         </div>
+                        <?php } ?>
                     </div>
                 </div>
                 <!-- All Opening Time -->
                 <div class="admin-field-row">
                     <label for="branch_all_opening_time"><strong>All Opening Time</strong></label>
-                    <input type="text" name="branch_all_opening_time" id="branch_all_opening_time" value="<?php echo esc_attr( $branch_all_opening_time ); ?>" class="widefat">
+                    <input type="text" name="branch_all_opening_time" id="branch_all_opening_time" value="<?php echo esc_attr( $branch_all_opening_time ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
             </div>
 
@@ -330,27 +371,27 @@ function branch_render_meta_box( $post ) {
                 <!-- Car -->
                 <div class="admin-field-row">
                     <label for="branch_car"><strong>Car</strong></label>
-                    <input type="text" name="branch_car" id="branch_car" value="<?php echo esc_attr( $branch_car ); ?>" class="widefat">
+                    <input type="text" name="branch_car" id="branch_car" value="<?php echo esc_attr( $branch_car ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- BTS or MRT -->
                 <div class="admin-field-row">
                     <label for="branch_bts_or_mrt"><strong>BTS or MRT</strong></label>
-                    <input type="text" name="branch_bts_or_mrt" id="branch_bts_or_mrt" value="<?php echo esc_attr( $branch_bts_or_mrt ); ?>" class="widefat">
+                    <input type="text" name="branch_bts_or_mrt" id="branch_bts_or_mrt" value="<?php echo esc_attr( $branch_bts_or_mrt ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Bus -->
                 <div class="admin-field-row">
                     <label for="branch_bus"><strong>Bus</strong></label>
-                    <textarea name="branch_bus" id="branch_bus" class="widefat" rows="3"><?php echo esc_textarea( $branch_bus ); ?></textarea>
+                    <textarea name="branch_bus" id="branch_bus" rows="3" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>><?php echo esc_textarea( $branch_bus ); ?></textarea>
                 </div>
                 <!-- Address -->
                 <div class="admin-field-row">
                     <label for="branch_address"><strong>Address</strong></label>
-                    <input type="text" name="branch_address" id="branch_address" value="<?php echo esc_attr( $branch_address ); ?>" class="widefat">
+                    <input type="text" name="branch_address" id="branch_address" value="<?php echo esc_attr( $branch_address ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
                 <!-- Nearby Landmark -->
                 <div class="admin-field-row">
                     <label for="branch_nearby_landmark"><strong>Nearby Landmark</strong></label>
-                    <textarea name="branch_nearby_landmark" id="branch_nearby_landmark" class="widefat" rows="2"><?php echo esc_textarea( $branch_nearby_landmark ); ?></textarea>
+                    <textarea name="branch_nearby_landmark" id="branch_nearby_landmark" rows="2" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>><?php echo esc_textarea( $branch_nearby_landmark ); ?></textarea>
                 </div>
 
                 <!-- Services -->
@@ -362,7 +403,9 @@ function branch_render_meta_box( $post ) {
                                 <tr>
                                     <th width="30"></th>
                                     <th>Service Name</th>
+                                    <?php if ( $is_sender ) { ?>
                                     <th width="30"></th>
+                                    <?php } ?>
                                 </tr>
                             </thead>
                             <tbody id="services-table-body">
@@ -374,9 +417,11 @@ function branch_render_meta_box( $post ) {
                                         $service_name = isset( $service['name'] ) ? $service['name'] : '';
                                         ?>
                                         <tr class="admin-table-row">
-                                            <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                            <td><input type="text" name="branch_services[<?php echo $index; ?>][name]" value="<?php echo esc_attr( $service_name ); ?>" class="widefat"></td>
+                                            <td class="row-index<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
+                                            <td><input type="text" name="branch_services[<?php echo $index; ?>][name]" value="<?php echo esc_attr( $service_name ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                            <?php if ( $is_sender ) { ?>
                                             <td><span class="remove-table-row dashicons dashicons-no-alt remove-services-row"></span></td>
+                                            <?php } ?>
                                         </tr>
                                         <?php
                                     }
@@ -384,18 +429,22 @@ function branch_render_meta_box( $post ) {
                                     // Default 1 row if empty
                                     ?>
                                     <tr class="admin-table-row">
-                                        <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                        <td><input type="text" name="branch_services[0][name]" value="" class="widefat"></td>
+                                        <td class="row-index<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
+                                        <td><input type="text" name="branch_services[0][name]" value="" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                        <?php if ( $is_sender ) { ?>
                                         <td><span class="remove-table-row dashicons dashicons-no-alt remove-services-row"></span></td>
+                                        <?php } ?>
                                     </tr>
                                     <?php
                                 }
                                 ?>
                             </tbody>
                         </table>
+                        <?php if ( $is_sender ) { ?>
                         <div class="text-right" style="margin-top: 10px;">
                             <button type="button" class="button button-primary" id="add-services-row">Add Row</button>
                         </div>
+                        <?php } ?>
                     </div>
                 </div>
                 
@@ -458,7 +507,7 @@ function branch_save_meta_data( $post_id ) {
 
     // Save Simple Text Fields
     $text_fields = array(
-        'branch_order',
+        // 'branch_order',
         'branch_title',
         'branch_title_floor',
         'branch_telephone',

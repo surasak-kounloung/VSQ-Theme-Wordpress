@@ -90,7 +90,7 @@ function prices_add_admin_menu() {
         'prices-settings',
         'prices_options_page_html',
         'dashicons-money-alt',
-        46
+        47
     );
 }
 add_action( 'admin_menu', 'prices_add_admin_menu' );
@@ -348,6 +348,16 @@ function prices_options_page_html() {
             <a href="?page=prices-settings&tab=course" class="nav-tab <?php echo $active_tab == 'course' ? 'nav-tab-active' : ''; ?>">Course Prices</a>
         </nav>
         
+        <?php 
+        // Check if user is a sender
+        $is_sender = false;
+        if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+            $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+            $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+        } 
+        
+        if ( $is_sender ) {
+        ?>
         <div class="card" style="margin-top: 20px; margin-bottom: 20px; padding: 15px 15px 25px; max-width: 100%;">
             <h2 style="margin-top:0;">Manage <?php echo ($active_tab === 'course') ? 'Course' : 'Single'; ?> Prices via CSV</h2>
             <p><strong>Required CSV Headers:</strong> <code><?php echo implode(', ', $fields); ?></code></p>
@@ -380,6 +390,7 @@ function prices_options_page_html() {
                 </div>
             </div>
         </div>
+        <?php } ?>
 
         <!-- Data Table -->
         <div style="margin-top: 20px; padding: 0;">

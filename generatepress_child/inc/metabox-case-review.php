@@ -43,6 +43,13 @@ function case_review_render_meta_box( $post ) {
         $case_review_procedures = array();
     }
 
+    // Check if user is a sender
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    } 
+
     ?>
     <div class="admin-meta-wrapper">
         
@@ -66,19 +73,23 @@ function case_review_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_thumbnail ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt thumbnail-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt thumbnail-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="case_review_add_thumbnail"><?php echo empty($case_review_thumbnail) ? 'Add Thumbnail' : 'Change Thumbnail'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
                 <!-- ID Video -->
                 <div class="admin-field-row">
                     <label for="case_review_id_video"><strong>ID Video</strong></label>
-                    <input type="text" name="case_review_id_video" id="case_review_id_video" value="<?php echo esc_attr( $case_review_id_video ); ?>" class="widefat">
+                    <input type="text" name="case_review_id_video" id="case_review_id_video" value="<?php echo esc_attr( $case_review_id_video ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
                 </div>
             </div>
 
@@ -101,13 +112,17 @@ function case_review_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_image_before_after ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 200px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt image-before-after-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt image-before-after-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="case_review_add_image_before_after"><?php echo empty($case_review_image_before_after) ? 'Add Image' : 'Change Image'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
                 <!-- List of Procedures -->
@@ -120,7 +135,9 @@ function case_review_render_meta_box( $post ) {
                                     <th width="30"></th>
                                     <th>Procedures</th>
                                     <th>Quantity</th>
+                                    <?php if ( $is_sender ) { ?>
                                     <th width="30"></th>
+                                    <?php } ?>
                                 </tr>
                             </thead>
                             <tbody id="procedures-table-body">
@@ -133,10 +150,12 @@ function case_review_render_meta_box( $post ) {
                                         $quantity = isset( $row['quantity'] ) ? $row['quantity'] : '';
                                         ?>
                                         <tr class="admin-table-row">
-                                            <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][procedures]" value="<?php echo esc_attr( $procedures ); ?>" class="widefat"></td>
-                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][quantity]" value="<?php echo esc_attr( $quantity ); ?>" class="widefat"></td>
+                                            <td class="row-index<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
+                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][procedures]" value="<?php echo esc_attr( $procedures ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click"<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                            <td><input type="text" name="case_review_procedures[<?php echo $index; ?>][quantity]" value="<?php echo esc_attr( $quantity ); ?>" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                            <?php if ( $is_sender ) { ?>
                                             <td><span class="remove-table-row dashicons dashicons-no-alt remove-procedures-row"></span></td>
+                                            <?php } ?>
                                         </tr>
                                         <?php
                                     }
@@ -145,18 +164,22 @@ function case_review_render_meta_box( $post ) {
                                     ?>
                                     <tr class="admin-table-row">
                                         <td class="row-index" style="cursor: move;"><span class="dashicons dashicons-menu" style="color: #ccc;"></span></td>
-                                        <td><input type="text" name="case_review_procedures[0][procedures]" value="" class="widefat"></td>
-                                        <td><input type="text" name="case_review_procedures[0][quantity]" value="" class="widefat"></td>
+                                        <td><input type="text" name="case_review_procedures[0][procedures]" value="" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                        <td><input type="text" name="case_review_procedures[0][quantity]" value="" class="widefat<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>></td>
+                                        <?php if ( $is_sender ) { ?>
                                         <td><span class="remove-table-row dashicons dashicons-no-alt remove-procedures-row"></span></td>
+                                        <?php } ?>
                                     </tr>
                                     <?php
                                 }
                                 ?>
                             </tbody>
                         </table>
+                        <?php if ( $is_sender ) { ?>
                         <div class="text-right" style="margin-top: 10px;">
                             <button type="button" class="button button-primary" id="add-procedures-row">Add Row</button>
                         </div>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
@@ -183,13 +206,17 @@ function case_review_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_image_before ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 300px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt image-before-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt image-before-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="case_review_add_image_before"><?php echo empty($case_review_image_before) ? 'Add Image' : 'Change Image'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
@@ -212,13 +239,17 @@ function case_review_render_meta_box( $post ) {
                                 if ( $url ) {
                                     echo '<div class="admin-image-item" data-id="' . esc_attr( $case_review_image_after ) . '">';
                                     echo '<img src="' . esc_url( $url ) . '" style="max-height: 300px; width: auto;">';
-                                    echo '<span class="admin-remove-image dashicons dashicons-no-alt image-after-remove-image"></span>';
+                                    if ( $is_sender ) {
+                                        echo '<span class="admin-remove-image dashicons dashicons-no-alt image-after-remove-image"></span>';
+                                    }
                                     echo '</div>';
                                 }
                             }
                             ?>
                         </div>
+                        <?php if ( $is_sender ) { ?>
                         <button type="button" class="button" id="case_review_add_image_after"><?php echo empty($case_review_image_after) ? 'Add Image' : 'Change Image'; ?></button>
+                        <?php } ?>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,7 @@
-$max-viewport-dt: 1920;
+$max-viewport-nb: 1920;
 $max-viewport-mb: 768;
-@function get-vw-dt($target) {
-    $vw-context: ($max-viewport-dt * .01) * 1px;
+@function get-vw-nb($target) {
+    $vw-context: ($max-viewport-nb * .01) * 1px;
     @return ($target/$vw-context) * 1vw;
 }
 @function get-vw-mb($target) {
@@ -103,33 +103,33 @@ $max-viewport-mb: 768;
 @media (max-width: 1919px) {
     .section-slide-banner {
         width: 100vw;
-        padding-bottom: get-vw-dt(45px);
+        padding-bottom: get-vw-nb(45px);
     }
     .slide-banner-list {
-        height: get-vw-dt(732px);
-        max-height: get-vw-dt(732px);
+        height: get-vw-nb(732px);
+        max-height: get-vw-nb(732px);
     }
     .slide-banner-list .flickity-page-dots {
-        bottom: get-vw-dt(-44px);
-        padding: 0 get-vw-dt(47px);
+        bottom: get-vw-nb(-44px);
+        padding: 0 get-vw-nb(47px);
     }
     .slide-banner-list .flickity-page-dots .dot {
-        width: get-vw-dt(11px);
-        height: get-vw-dt(11px);
-        margin: 0 get-vw-dt(7px);
+        width: get-vw-nb(11px);
+        height: get-vw-nb(11px);
+        margin: 0 get-vw-nb(7px);
     }
     .slide-banner-list .flickity-button {
-        width: get-vw-dt(44px);
-        height: get-vw-dt(44px);
+        width: get-vw-nb(44px);
+        height: get-vw-nb(44px);
     }
     .slide-banner-list .flickity-prev-next-button.previous {
-        left: get-vw-dt(25px);
+        left: get-vw-nb(25px);
     }
     .slide-banner-list .flickity-prev-next-button.next {
-        right: get-vw-dt(25px);
+        right: get-vw-nb(25px);
     }
 }
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .section-slide-banner {
         padding-bottom: get-vw-mb(55px);
     }

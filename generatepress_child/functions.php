@@ -21,7 +21,9 @@ require_once get_stylesheet_directory() . '/inc/options-promotion.php';
 require_once get_stylesheet_directory() . '/inc/options-prices.php';
 require_once get_stylesheet_directory() . '/inc/options-product-images.php';
 require_once get_stylesheet_directory() . '/inc/options-cta-footer.php';
-require_once get_stylesheet_directory() . '/inc/options-popup-newyear.php';
+require_once get_stylesheet_directory() . '/inc/options-popup.php';
+require_once get_stylesheet_directory() . '/inc/options-detail-branch.php';
+require_once get_stylesheet_directory() . '/inc/options-services-list.php';
 
 /** Sync System */
 require_once get_stylesheet_directory() . '/inc/sync-system.php';
@@ -46,16 +48,17 @@ function load_google_fonts() {
 add_action( 'wp_enqueue_scripts', 'load_all_style', 90 );
 function load_all_style() {
 	// CSS
-    wp_enqueue_style( 'fonts-style', get_stylesheet_directory_uri() . '/assets/css/fonts.css', false, '1.0', 'all' );
+    wp_enqueue_style( 'fonts-style', get_stylesheet_directory_uri() . '/assets/css/fonts.css', false, filemtime( get_stylesheet_directory() . '/assets/css/fonts.css' ), 'all' );
     wp_enqueue_style( 'font-awesome-free-style', 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css', array(), '6.7.2' );
-    wp_enqueue_style( 'gutenberg-style', get_stylesheet_directory_uri() . '/assets/css/gutenberg.css', false, '1.0', 'all' );
-    wp_enqueue_style( 'pxtovw-style', get_stylesheet_directory_uri() . '/assets/css/pxtovw.css', false, '1.0', 'all' );
-    wp_enqueue_style( 'main-style', get_stylesheet_directory_uri() . '/assets/css/main.css', false, '1.0', 'all' );
+    wp_enqueue_style( 'gutenberg-style', get_stylesheet_directory_uri() . '/assets/css/gutenberg.css', false, filemtime( get_stylesheet_directory() . '/assets/css/gutenberg.css' ), 'all' );
+    wp_enqueue_style( 'pxtovw-style', get_stylesheet_directory_uri() . '/assets/css/pxtovw.css', false, filemtime( get_stylesheet_directory() . '/assets/css/pxtovw.css' ), 'all' );
+    wp_enqueue_style( 'main-style', get_stylesheet_directory_uri() . '/assets/css/main.css', false, filemtime( get_stylesheet_directory() . '/assets/css/main.css' ), 'all' );
+    wp_enqueue_style( 'cta-footer-style', get_stylesheet_directory_uri() . '/assets/css/cta-footer.css', false, filemtime( get_stylesheet_directory() . '/assets/css/cta-footer.css' ), 'all' );
     // if ( is_singular( 'post' ) || is_singular( 'posts_en' ) ) {
     //     wp_enqueue_style( 'blogs-style', get_stylesheet_directory_uri() . '/assets/css/blogs.css', false, '1.0', 'all' );
     // }
 	// JS
-    wp_enqueue_script( 'main-script', get_stylesheet_directory_uri() . '/assets/js/main.js', array(), '1.0.0', true );
+    wp_enqueue_script( 'main-script', get_stylesheet_directory_uri() . '/assets/js/main.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/main.js' ), true );
 }
 
 
@@ -127,8 +130,8 @@ function register_page_doctor() {
         'public'                => true,
         'show_ui'               => true,
         'show_in_menu'          => true,
-        'menu_position'         => 42,
-        'menu_icon'             => 'dashicons-groups',
+        'menu_position'         => 43,
+        'menu_icon'             => 'dashicons-businessman',
         'show_in_admin_bar'     => true,
         'show_in_nav_menus'     => true,
         'can_export'            => true,
@@ -270,7 +273,7 @@ function register_page_case_review() {
         'public'                => true,
         'show_ui'               => true,
         'show_in_menu'          => true,
-        'menu_position'         => 43,
+        'menu_position'         => 44,
         'menu_icon'             => 'dashicons-format-gallery',
         'show_in_admin_bar'     => true,
         'show_in_nav_menus'     => true,
@@ -390,7 +393,7 @@ function register_page_branch() {
         'public'                => true,
         'show_ui'               => true,
         'show_in_menu'          => true,
-        'menu_position'         => 44,
+        'menu_position'         => 45,
         'menu_icon'             => 'dashicons-admin-multisite',
         'show_in_admin_bar'     => true,
         'show_in_nav_menus'     => true,
@@ -488,6 +491,61 @@ function vsq_branch_add_sync_button_header() {
     }
 }
 add_action( 'admin_footer', 'vsq_branch_add_sync_button_header' );
+
+
+/**
+ * Hide Save/Update button on Doctor, Case Review, Branch Edit Page if not Sender
+ */
+function vsq_hide_save_button_if_not_sender() {
+    $screen = get_current_screen();
+    
+    // Check if we are on the doctor, case review, branch post type edit screen OR Options Pages
+    $target_options_screens = array(
+        'toplevel_page_slide-banner-settings',
+        'toplevel_page_doctor-table-settings',
+        'toplevel_page_promotion-settings',
+        'toplevel_page_prices-settings',
+        'toplevel_page_product-images-settings',
+        'toplevel_page_cta-footer-settings',
+        'toplevel_page_popup-settings',
+        'toplevel_page_services-list-settings',
+        'page_branch_page_options-detail-branch',
+        'toplevel_page_vsq-sync-settings'
+    );
+
+    if ( ! $screen || ( ! in_array( $screen->post_type, array( 'page_doctor', 'page_case_review', 'page_branch' ) ) && ! in_array( $screen->id, $target_options_screens ) ) ) {
+        return;
+    }
+
+    // Check role
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        // Check if role is sender
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    }
+
+    // If not sender, hide save button
+    if ( ! $is_sender ) {
+        ?>
+        <style>
+            .components-button.editor-post-publish-button { display: none !important; }
+            #publishing-action { display: none !important; }
+            .submitbox .publishing-action { display: none !important; }
+            #publish { display: none !important; }
+            #major-publishing-actions { display: none !important; }
+            .hide-not-sender { display: none !important; }
+            .hide-click { pointer-events: none !important; }
+            /****** Hide Add New Button ******/
+            .wp-heading-inline + .page-title-action, 
+            #menu-posts-page_doctor .wp-submenu li.wp-first-item + li, 
+            #menu-posts-page_case_review .wp-submenu li.wp-first-item + li, 
+            #menu-posts-page_branch .wp-submenu li.wp-first-item + li { display: none !important; }
+        </style>
+        <?php
+    }
+}
+add_action( 'admin_head', 'vsq_hide_save_button_if_not_sender' );
 
 
 /** 
