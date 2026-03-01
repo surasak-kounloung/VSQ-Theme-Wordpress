@@ -8,7 +8,7 @@ jQuery(document).ready(function($) {
             
             target.select2({
                 width: '100%',
-                placeholder: 'Select',
+                placeholder: 'Select Doctor',
                 allowClear: true
             });
         }

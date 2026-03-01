@@ -405,9 +405,9 @@ function promotion_frontend_assets()
     global $post;
     if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'promotion_list')) {
         wp_enqueue_style('flickity-style', 'https://unpkg.com/flickity@2/dist/flickity.min.css', array(), '1.0');
-        wp_enqueue_style('promotion-style', get_stylesheet_directory_uri() . '/assets/css/promotion.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/promotion.css' ));
+        wp_enqueue_style('promotion-style', get_stylesheet_directory_uri() . '/assets/css/promotion-list.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/promotion.css' ));
         wp_enqueue_script('flickity-script', 'https://unpkg.com/flickity@2/dist/flickity.pkgd.min.js', array(), '1.0', true);
-        wp_enqueue_script('promotion-script', get_stylesheet_directory_uri() . '/assets/js/promotion.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/promotion.js' ), true);
+        wp_enqueue_script('promotion-script', get_stylesheet_directory_uri() . '/assets/js/promotion-list.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/promotion.js' ), true);
     }
 }
 add_action('wp_enqueue_scripts', 'promotion_frontend_assets', 99);

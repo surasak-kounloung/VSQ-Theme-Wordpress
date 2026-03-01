@@ -25,6 +25,11 @@ jQuery(document).ready(function($) {
         });
 
         imageFrame.on( 'select', function() {
+            // Force blur to trigger change event on inputs in the media modal
+            if ( document.activeElement && ( document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' ) ) {
+                document.activeElement.blur();
+            }
+
             var attachment = imageFrame.state().get('selection').first().toJSON();
             var attachmentId = attachment.id;
             var url = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;
@@ -78,6 +83,11 @@ jQuery(document).ready(function($) {
         });
 
         imageFrameBeforeAfter.on( 'select', function() {
+            // Force blur to trigger change event on inputs in the media modal
+            if ( document.activeElement && ( document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' ) ) {
+                document.activeElement.blur();
+            }
+
             var attachment = imageFrameBeforeAfter.state().get('selection').first().toJSON();
             var attachmentId = attachment.id;
             var url = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;
@@ -181,6 +191,11 @@ jQuery(document).ready(function($) {
         });
 
         imageFrameBefore.on( 'select', function() {
+            // Force blur to trigger change event on inputs in the media modal
+            if ( document.activeElement && ( document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' ) ) {
+                document.activeElement.blur();
+            }
+
             var attachment = imageFrameBefore.state().get('selection').first().toJSON();
             var attachmentId = attachment.id;
             var url = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;
@@ -234,6 +249,11 @@ jQuery(document).ready(function($) {
         });
 
         imageFrameAfter.on( 'select', function() {
+            // Force blur to trigger change event on inputs in the media modal
+            if ( document.activeElement && ( document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' ) ) {
+                document.activeElement.blur();
+            }
+
             var attachment = imageFrameAfter.state().get('selection').first().toJSON();
             var attachmentId = attachment.id;
             var url = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;

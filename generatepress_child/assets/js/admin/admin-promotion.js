@@ -21,6 +21,11 @@ jQuery(document).ready(function($) {
 
         // When an image is selected, run a callback.
         mediaUploader.on('select', function() {
+            // Force blur to trigger change event on inputs in the media modal
+            if ( document.activeElement && ( document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' ) ) {
+                document.activeElement.blur();
+            }
+
             var attachment = mediaUploader.state().get('selection').first().toJSON();
             
             inputField.val(attachment.url); // Save URL

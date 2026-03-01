@@ -183,7 +183,9 @@ function vsq_doctor_add_sync_button_header() {
         return;
     }
 
-    $sync_url = wp_nonce_url( admin_url( 'admin-post.php?action=vsq_sync_all_doctors' ), 'vsq_sync_all_doctors_action' );
+    // Use AJAX URL
+    $ajax_url = admin_url( 'admin-ajax.php' );
+    $nonce = wp_create_nonce( 'vsq_sync_all_doctors_action' );
     
     // Check if user is a sender
     $is_sender = false;
@@ -196,10 +198,81 @@ function vsq_doctor_add_sync_button_header() {
         ?>
         <script type="text/javascript">
             jQuery(document).ready(function($) {
-                var buttonHtml = '<a href="<?php echo esc_url( $sync_url ); ?>" class="page-title-action" onclick="return confirm(\'คุณต้องการส่งข้อมูลแพทย์ทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่?\');" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1;">' +
-                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> ส่งข้อมูลแพทย์ทั้งหมดไปยังเว็บลูกข่าย' +
-                                 '</a>';
-                $('.page-title-action').after(buttonHtml);
+                var buttonHtml = '<button type="button" id="vsq-sync-doctors-btn" class="page-title-action" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1; cursor: pointer;">' +
+                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> <span class="vsq-btn-text">ส่งข้อมูลแพทย์ทั้งหมดไปยังเว็บลูกข่าย</span>' +
+                                 '</button>';
+                $('.page-title-action').last().after(buttonHtml);
+
+                $('#vsq-sync-doctors-btn').on('click', function(e) {
+                    e.preventDefault();
+                    
+                    if ( ! confirm('คุณต้องการส่งข้อมูลแพทย์ทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่? (อาจใช้เวลาสักครู่)') ) {
+                        return;
+                    }
+
+                    var $btn = $(this);
+                    var $text = $btn.find('.vsq-btn-text');
+                    var originalText = $text.text();
+                    
+                    $btn.prop('disabled', true).css('opacity', '0.7');
+                    $text.text('กำลังเตรียมข้อมูล...');
+
+                    // Create Notice Element
+                    var $notice = $('<div class="notice notice-info is-dismissible vsq-sync-notice"><p>กำลังส่งข้อมูลแพทย์... <span class="vsq-sync-count">0</span> รายการ</p></div>');
+                    $('.wrap h1').after($notice);
+
+                    function syncBatch(offset, total) {
+                        $.ajax({
+                            url: '<?php echo $ajax_url; ?>',
+                            type: 'POST',
+                            data: {
+                                action: 'vsq_sync_batch_doctors',
+                                _wpnonce: '<?php echo $nonce; ?>',
+                                offset: offset,
+                                limit: 5, // Process 5 at a time
+                                total: total
+                            },
+                            success: function(response) {
+                                if ( response.success ) {
+                                    // Update Count in Notice
+                                    var currentCount = Math.min(response.data.offset, response.data.total);
+                                    $('.vsq-sync-count').text(currentCount + '/' + response.data.total);
+
+                                    if ( response.data.done ) {
+                                        $text.text('เสร็จสิ้น!');
+                                        $notice.removeClass('notice-info').addClass('notice-success');
+                                        $notice.find('p').html('ส่งข้อมูลแพทย์จำนวน ' + response.data.total + ' รายการ ไปยังเว็บลูกข่ายเรียบร้อยแล้ว');
+                                        
+                                        setTimeout(function() {
+                                            $btn.prop('disabled', false).css('opacity', '1');
+                                            $text.text(originalText);
+                                        }, 2000);
+                                    } else {
+                                        // Continue next batch
+                                        $text.text( 'กำลังส่ง... (' + currentCount + '/' + response.data.total + ')' );
+                                        syncBatch( response.data.offset, response.data.total );
+                                    }
+                                } else {
+                                    alert('เกิดข้อผิดพลาด: ' + (response.data || 'Unknown error'));
+                                    $notice.removeClass('notice-info').addClass('notice-error');
+                                    $notice.find('p').text('เกิดข้อผิดพลาด: ' + (response.data || 'Unknown error'));
+                                    $btn.prop('disabled', false).css('opacity', '1');
+                                    $text.text(originalText);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                $notice.removeClass('notice-info').addClass('notice-error');
+                                $notice.find('p').text('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                $btn.prop('disabled', false).css('opacity', '1');
+                                $text.text(originalText);
+                            }
+                        });
+                    }
+
+                    // Start first batch
+                    syncBatch(0, 0);
+                });
             });
         </script>
         <?php
@@ -316,10 +389,85 @@ function vsq_case_review_add_sync_button_header() {
         ?>
         <script type="text/javascript">
             jQuery(document).ready(function($) {
-                var buttonHtml = '<a href="<?php echo esc_url( $sync_url ); ?>" class="page-title-action" onclick="return confirm(\'คุณต้องการส่งข้อมูลรีวิวทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่?\');" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1;">' +
-                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> ส่งข้อมูลรีวิวทั้งหมดไปยังเว็บลูกข่าย' +
-                                 '</a>';
-                $('.page-title-action').after(buttonHtml);
+                var buttonHtml = '<button type="button" id="vsq-sync-reviews-btn" class="page-title-action" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1; cursor: pointer;">' +
+                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> <span class="vsq-btn-text">ส่งข้อมูลรีวิวทั้งหมดไปยังเว็บลูกข่าย</span>' +
+                                 '</button>';
+                $('.page-title-action').last().after(buttonHtml);
+
+                $('#vsq-sync-reviews-btn').on('click', function(e) {
+                    e.preventDefault();
+                    
+                    if ( ! confirm('คุณต้องการส่งข้อมูลรีวิวทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่? (อาจใช้เวลาสักครู่)') ) {
+                        return;
+                    }
+
+                    var $btn = $(this);
+                    var $text = $btn.find('.vsq-btn-text');
+                    var originalText = $text.text();
+                    
+                    $btn.prop('disabled', true).css('opacity', '0.7');
+                    $text.text('กำลังเตรียมข้อมูล...');
+
+                    // Create Notice Element
+                    var $notice = $('<div class="notice notice-info is-dismissible vsq-sync-notice"><p>กำลังส่งข้อมูลรีวิว... <span class="vsq-sync-count">0</span> รายการ</p></div>');
+                    $('.wrap h1').after($notice);
+
+                    // Use AJAX URL from admin global or localized script (Assuming admin-ajax is available or localized elsewhere, 
+                    // but here we are in PHP block so we can output it. 
+                    // However, doctor block used $ajax_url and $nonce. We need to ensure they are available here or re-define.)
+                    var ajaxUrl = '<?php echo admin_url( 'admin-ajax.php' ); ?>';
+                    var nonce = '<?php echo wp_create_nonce( 'vsq_sync_all_case_reviews_action' ); ?>';
+
+                    function syncBatch(offset, total) {
+                        $.ajax({
+                            url: ajaxUrl,
+                            type: 'POST',
+                            data: {
+                                action: 'vsq_sync_batch_case_reviews',
+                                _wpnonce: nonce,
+                                offset: offset,
+                                limit: 5, 
+                                total: total
+                            },
+                            success: function(response) {
+                                if ( response.success ) {
+                                    // Update Count in Notice
+                                    var currentCount = Math.min(response.data.offset, response.data.total);
+                                    $('.vsq-sync-count').text(currentCount + '/' + response.data.total);
+
+                                    if ( response.data.done ) {
+                                        $text.text('เสร็จสิ้น!');
+                                        $notice.removeClass('notice-info').addClass('notice-success');
+                                        $notice.find('p').html('ส่งข้อมูลรีวิวจำนวน ' + response.data.total + ' รายการ ไปยังเว็บลูกข่ายเรียบร้อยแล้ว');
+                                        
+                                        setTimeout(function() {
+                                            $btn.prop('disabled', false).css('opacity', '1');
+                                            $text.text(originalText);
+                                        }, 2000);
+                                    } else {
+                                        $text.text( 'กำลังส่ง... (' + currentCount + '/' + response.data.total + ')' );
+                                        syncBatch( response.data.offset, response.data.total );
+                                    }
+                                } else {
+                                    alert('เกิดข้อผิดพลาด: ' + (response.data || 'Unknown error'));
+                                    $notice.removeClass('notice-info').addClass('notice-error');
+                                    $notice.find('p').text('เกิดข้อผิดพลาด: ' + (response.data || 'Unknown error'));
+                                    $btn.prop('disabled', false).css('opacity', '1');
+                                    $text.text(originalText);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                $notice.removeClass('notice-info').addClass('notice-error');
+                                $notice.find('p').text('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                $btn.prop('disabled', false).css('opacity', '1');
+                                $text.text(originalText);
+                            }
+                        });
+                    }
+
+                    syncBatch(0, 0);
+                });
             });
         </script>
         <?php
@@ -481,10 +629,82 @@ function vsq_branch_add_sync_button_header() {
         ?>
         <script type="text/javascript">
             jQuery(document).ready(function($) {
-                var buttonHtml = '<a href="<?php echo esc_url( $sync_url ); ?>" class="page-title-action" onclick="return confirm(\'คุณต้องการส่งข้อมูลสาขาทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่?\');" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1;">' +
-                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> ส่งข้อมูลสาขาทั้งหมดไปยังเว็บลูกข่าย' +
-                                 '</a>';
-                $('.page-title-action').after(buttonHtml);
+                var buttonHtml = '<button type="button" id="vsq-sync-branches-btn" class="page-title-action" style="margin-left: 10px; background-color: #f0f0f1; color: #2271b1; border-color: #2271b1; cursor: pointer;">' +
+                                 '<span class="dashicons dashicons-cloud-upload" style="margin-top: 6px; margin-right: 4px; font-size: 18px; width: 18px; height: 18px;"></span> <span class="vsq-btn-text">ส่งข้อมูลสาขาทั้งหมดไปยังเว็บลูกข่าย</span>' +
+                                 '</button>';
+                $('.page-title-action').last().after(buttonHtml);
+
+                $('#vsq-sync-branches-btn').on('click', function(e) {
+                    e.preventDefault();
+                    
+                    if ( ! confirm('คุณต้องการส่งข้อมูลสาขาทั้งหมดไปยังเว็บลูกข่ายใช่หรือไม่? (อาจใช้เวลาสักครู่)') ) {
+                        return;
+                    }
+
+                    var $btn = $(this);
+                    var $text = $btn.find('.vsq-btn-text');
+                    var originalText = $text.text();
+                    
+                    $btn.prop('disabled', true).css('opacity', '0.7');
+                    $text.text('กำลังเตรียมข้อมูล...');
+
+                    // Create Notice Element
+                    var $notice = $('<div class="notice notice-info is-dismissible vsq-sync-notice"><p>กำลังส่งข้อมูลสาขา... <span class="vsq-sync-count">0</span> รายการ</p></div>');
+                    $('.wrap h1').after($notice);
+
+                    var ajaxUrl = '<?php echo admin_url( 'admin-ajax.php' ); ?>';
+                    var nonce = '<?php echo wp_create_nonce( 'vsq_sync_all_branches_action' ); ?>';
+
+                    function syncBatch(offset, total) {
+                        $.ajax({
+                            url: ajaxUrl,
+                            type: 'POST',
+                            data: {
+                                action: 'vsq_sync_batch_branches',
+                                _wpnonce: nonce,
+                                offset: offset,
+                                limit: 5, 
+                                total: total
+                            },
+                            success: function(response) {
+                                if ( response.success ) {
+                                    // Update Count in Notice
+                                    var currentCount = Math.min(response.data.offset, response.data.total);
+                                    $('.vsq-sync-count').text(currentCount + '/' + response.data.total);
+
+                                    if ( response.data.done ) {
+                                        $text.text('เสร็จสิ้น!');
+                                        $notice.removeClass('notice-info').addClass('notice-success');
+                                        $notice.find('p').html('ส่งข้อมูลสาขาจำนวน ' + response.data.total + ' รายการ ไปยังเว็บลูกข่ายเรียบร้อยแล้ว');
+                                        
+                                        setTimeout(function() {
+                                            $btn.prop('disabled', false).css('opacity', '1');
+                                            $text.text(originalText);
+                                        }, 2000);
+                                    } else {
+                                        $text.text( 'กำลังส่ง... (' + currentCount + '/' + response.data.total + ')' );
+                                        syncBatch( response.data.offset, response.data.total );
+                                    }
+                                } else {
+                                    alert('เกิดข้อผิดพลาด: ' + (response.data || 'Unknown error'));
+                                    $notice.removeClass('notice-info').addClass('notice-error');
+                                    $notice.find('p').text('เกิดข้อผิดพลาด: ' + (response.data || 'Unknown error'));
+                                    $btn.prop('disabled', false).css('opacity', '1');
+                                    $text.text(originalText);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                $notice.removeClass('notice-info').addClass('notice-error');
+                                $notice.find('p').text('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error);
+                                $btn.prop('disabled', false).css('opacity', '1');
+                                $text.text(originalText);
+                            }
+                        });
+                    }
+
+                    syncBatch(0, 0);
+                });
             });
         </script>
         <?php
@@ -529,6 +749,7 @@ function vsq_hide_save_button_if_not_sender() {
     if ( ! $is_sender ) {
         ?>
         <style>
+            /****** Hide Save/Update Button ******/
             .components-button.editor-post-publish-button { display: none !important; }
             #publishing-action { display: none !important; }
             .submitbox .publishing-action { display: none !important; }
@@ -541,6 +762,16 @@ function vsq_hide_save_button_if_not_sender() {
             #menu-posts-page_doctor .wp-submenu li.wp-first-item + li, 
             #menu-posts-page_case_review .wp-submenu li.wp-first-item + li, 
             #menu-posts-page_branch .wp-submenu li.wp-first-item + li { display: none !important; }
+            /****** Hide Edit/Quick Edit Button ******/
+            .wp-list-table .type-page_doctor .row-actions .edit, 
+            .wp-list-table .type-page_doctor .row-actions .edit + span, 
+            .wp-list-table .type-page_case_review .row-actions .edit, 
+            .wp-list-table .type-page_case_review .row-actions .edit + span, 
+            .wp-list-table .type-page_branch .row-actions .edit, 
+            .wp-list-table .type-page_branch .row-actions .edit + span { display: none !important; }
+            .post-type-page_doctor .tablenav .bulkactions #bulk-action-selector-top option[value="edit"], 
+            .post-type-page_case_review .tablenav .bulkactions #bulk-action-selector-top option[value="edit"],
+            .post-type-page_branch .tablenav .bulkactions #bulk-action-selector-top option[value="edit"] { display: none !important; }
         </style>
         <?php
     }
