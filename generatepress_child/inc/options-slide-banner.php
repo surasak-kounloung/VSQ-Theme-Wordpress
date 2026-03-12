@@ -354,9 +354,9 @@ function sb_frontend_assets()
     global $post;
     if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'slide_banner')) {
         wp_enqueue_style('flickity-style', 'https://unpkg.com/flickity@2/dist/flickity.min.css', array(), '1.0');
-        wp_enqueue_style('slide-banner-style', get_stylesheet_directory_uri() . '/assets/css/slide_banner.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/slide_banner.css' ));
+        wp_enqueue_style('slide-banner-style', get_stylesheet_directory_uri() . '/assets/css/slide-banner.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/slide-banner.css' ));
         wp_enqueue_script('flickity-script', 'https://unpkg.com/flickity@2/dist/flickity.pkgd.min.js', array(), '1.0', true);
-        wp_enqueue_script('slide-banner-script', get_stylesheet_directory_uri() . '/assets/js/slide_banner.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/slide_banner.js' ), true);
+        wp_enqueue_script('slide-banner-script', get_stylesheet_directory_uri() . '/assets/js/slide-banner.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/slide-banner.js' ), true);
     }
 }
 add_action('wp_enqueue_scripts', 'sb_frontend_assets', 99);

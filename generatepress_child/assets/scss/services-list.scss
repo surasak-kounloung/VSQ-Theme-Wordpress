@@ -1,0 +1,75 @@
+$max-viewport-nb: 1920;
+$max-viewport-mb: 768;
+@function get-vw-nb($target) {
+    $vw-context: ($max-viewport-nb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
+}
+@function get-vw-mb($target) {
+    $vw-context: ($max-viewport-mb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
+}
+
+.site-content .services-list, 
+.services-list {
+    position: relative;
+    margin-top: 30px;
+}
+.site-content .services-list .kt-row-column-wrap, 
+.services-list .kt-row-column-wrap {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+}
+.site-content .services-list .wp-block-kadence-column, 
+.services-list .wp-block-kadence-column {
+    margin: 0;
+}
+.site-content .services-list .wp-block-image, 
+.services-list .wp-block-image {
+    display: block;
+    margin: 0;
+}
+.site-content .services-list .wp-block-image a, 
+.services-list .wp-block-image a {
+    display: block;
+    transition: opacity 0.25s ease-in-out;
+}
+.site-content .services-list .wp-block-image a:hover, 
+.services-list .wp-block-image a:hover {
+    opacity: 0.8;
+}
+.site-content .services-list .wp-block-image img, 
+.services-list .wp-block-image img {
+    width: 100%;
+    height: auto;
+    max-width: unset;
+}
+@media (max-width: 1919px) {
+    .site-content .services-list, 
+    .services-list {
+        margin-top: get-vw-nb(30px);
+    }
+    .site-content .services-list .kt-row-column-wrap, 
+    .services-list .kt-row-column-wrap {
+        gap: get-vw-nb(20px);
+    }
+}
+@media (max-width: 767px) {
+    .site-content .services-list, 
+    .services-list {
+        margin-top: get-vw-mb(35px);
+    }
+    .site-content .services-list .kt-row-column-wrap, 
+    .services-list .kt-row-column-wrap {
+        grid-template-columns: repeat(2, 1fr);
+        gap: get-vw-mb(30px);
+    }
+    .site-content .services-list .wp-block-image a:hover, 
+    .services-list .wp-block-image a:hover {
+        opacity: 1;
+    }
+    .site-content .services-list .wp-block-image a:active, 
+    .services-list .wp-block-image a:active {
+        opacity: 0.8;
+    }
+}

@@ -37,9 +37,26 @@ function course_prices_get_schema_fields() {
         'session',
         'normal_price',
         'unit_price',
-        'name', // unit_name
+        'name',
         'treatment_group_name',
         'product_master_name',
+        'treatment_by',
+    );
+}
+
+// Helper: Define the exact schema fields
+function package_prices_get_schema_fields() {
+    return array(
+        'code',
+        'package_name',
+        'initial_qty',
+        'normal_price',
+        'package_price',
+        'normal_unit_price',
+        'unit',
+        'treatment_group_name',
+        'product_master_name',
+        'body_position_name',
         'treatment_by',
     );
 }
@@ -77,6 +94,23 @@ function course_prices_get_head_table() {
         'Unit Name',
         'Group',
         'Product Master',
+        'By',
+    );
+}
+
+// Helper: Define the head table fields for Package Prices
+function package_prices_get_head_table() {
+    return array(
+        'Code',
+        'Package Name',
+        'Quantity',
+        'Price',
+        'Package Price',
+        'Unit Price',
+        'Unit',
+        'Group',
+        'Product Master',
+        'Body Position',
         'By',
     );
 }
@@ -132,14 +166,20 @@ function prices_handle_csv_actions() {
         return;
     }
 
-    // Determine Type (single vs course)
+    // Determine Type (single vs course vs package)
     $price_type = isset($_POST['price_type']) ? sanitize_text_field($_POST['price_type']) : 'single';
     
     // Select Schema based on type
-    $fields = ($price_type === 'course') ? course_prices_get_schema_fields() : prices_get_schema_fields();
-
-    // Map to data keys: 'items' for single, 'course_items' for course
-    $data_key = ($price_type === 'course') ? 'course_items' : 'items';
+    if ($price_type === 'course') {
+        $fields = course_prices_get_schema_fields();
+        $data_key = 'course_items';
+    } elseif ($price_type === 'package') {
+        $fields = package_prices_get_schema_fields();
+        $data_key = 'package_items';
+    } else {
+        $fields = prices_get_schema_fields();
+        $data_key = 'items';
+    }
 
     // --- Export Action ---
     if ( isset( $_POST['action'] ) && 'export_prices_csv' === $_POST['action'] ) {
@@ -266,7 +306,14 @@ function prices_options_page_html() {
     }
 
     $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'single';
-    $data_key = ($active_tab === 'course') ? 'course_items' : 'items';
+
+    if ($active_tab === 'course') {
+        $data_key = 'course_items';
+    } elseif ($active_tab === 'package') {
+        $data_key = 'package_items';
+    } else {
+        $data_key = 'items';
+    }
 
     $data = get_option( 'prices_data', array() );
     $all_items = isset($data[$data_key]) && is_array($data[$data_key]) ? $data[$data_key] : array();
@@ -275,6 +322,9 @@ function prices_options_page_html() {
     if ($active_tab === 'course') {
         $fields = course_prices_get_schema_fields();
         $head_table = course_prices_get_head_table();
+    } elseif ($active_tab === 'package') {
+        $fields = package_prices_get_schema_fields();
+        $head_table = package_prices_get_head_table();
     } else {
         $fields = prices_get_schema_fields();
         $head_table = prices_get_head_table();
@@ -282,7 +332,13 @@ function prices_options_page_html() {
 
     // Filter Logic
     $filter_options = array();
-    $filter_key = ($active_tab === 'course') ? 'product_master_name' : 'body_position_name';
+    if ($active_tab === 'course') {
+        $filter_key = 'product_master_name';
+    } elseif ($active_tab === 'package') {
+        $filter_key = 'treatment_group_name';
+    } else {
+        $filter_key = 'body_position_name';
+    }
 
     foreach ($all_items as $itm) {
         if (!empty($itm[$filter_key])) {
@@ -317,6 +373,26 @@ function prices_options_page_html() {
         });
     }
 
+    // Sorting Logic
+    $sortable_fields = array('normal_price', 'normal_unit_price', 'unit_price', 'package_price');
+    $orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : '';
+    $order   = isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'asc';
+    if ( ! in_array($order, array('asc', 'desc')) ) {
+        $order = 'asc';
+    }
+
+    if ( $orderby && in_array($orderby, $sortable_fields) && in_array($orderby, $fields) ) {
+        usort($all_items, function($a, $b) use ($orderby, $order) {
+            $val_a = isset($a[$orderby]) ? floatval(str_replace(',', '', $a[$orderby])) : 0;
+            $val_b = isset($b[$orderby]) ? floatval(str_replace(',', '', $b[$orderby])) : 0;
+
+            if ($order === 'desc') {
+                return $val_b <=> $val_a;
+            }
+            return $val_a <=> $val_b;
+        });
+    }
+
     // Pagination Logic
     $per_page = 50;
     $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
@@ -346,6 +422,7 @@ function prices_options_page_html() {
         <nav class="nav-tab-wrapper">
             <a href="?page=prices-settings&tab=single" class="nav-tab <?php echo $active_tab == 'single' ? 'nav-tab-active' : ''; ?>">Single Prices</a>
             <a href="?page=prices-settings&tab=course" class="nav-tab <?php echo $active_tab == 'course' ? 'nav-tab-active' : ''; ?>">Course Prices</a>
+            <a href="?page=prices-settings&tab=package" class="nav-tab <?php echo $active_tab == 'package' ? 'nav-tab-active' : ''; ?>">Package Prices</a>
         </nav>
         
         <?php 
@@ -355,14 +432,15 @@ function prices_options_page_html() {
             $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
             $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
         } 
-        
-        if ( $is_sender ) {
         ?>
         <div class="card" style="margin-top: 20px; margin-bottom: 20px; padding: 15px 15px 25px; max-width: 100%;">
-            <h2 style="margin-top:0;">Manage <?php echo ($active_tab === 'course') ? 'Course' : 'Single'; ?> Prices via CSV</h2>
+            <h2 style="margin-top:0;">Manage <?php echo ($active_tab === 'course') ? 'Course' : (($active_tab === 'package') ? 'Package' : 'Single'); ?> Prices via CSV</h2>
+            <?php if ( $is_sender ) { ?>
             <p><strong>Required CSV Headers:</strong> <code><?php echo implode(', ', $fields); ?></code></p>
-            <p><strong>Shortcode Usage:</strong> <code>[price code="XXXXX"]</code> แสดงราคา (Price) สำหรับรหัสรายการนั้นๆ</p>
+            <?php } ?>
+            <p><strong>Shortcode Usage:</strong> <code>[price code="XXXXX"]</code> แสดงราคา (คอลัมน์ Price) สำหรับรหัสรายการนั้นๆ</p>
             
+            <?php if ( $is_sender ) { ?>
             <div style="display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap;">
                 <!-- Export -->
                 <div style="flex: 1; min-width: 250px; border-right: 1px solid #eee; padding-right: 20px;">
@@ -389,8 +467,8 @@ function prices_options_page_html() {
                     </form>
                 </div>
             </div>
+            <?php } ?>
         </div>
-        <?php } ?>
 
         <!-- Data Table -->
         <div style="margin-top: 20px; padding: 0;">
@@ -403,7 +481,7 @@ function prices_options_page_html() {
                     <input type="hidden" name="tab" value="<?php echo esc_attr($active_tab); ?>" />
                     
                     <select name="filter_val">
-                        <option value="">-- All <?php echo ($active_tab === 'course') ? 'Products & Positions' : 'Positions'; ?> --</option>
+                        <option value="">-- All <?php echo ($active_tab === 'course') ? 'Products & Positions' : (($active_tab === 'package') ? 'Groups' : 'Positions'); ?> --</option>
                         <?php foreach ($filter_options as $opt): ?>
                             <option value="<?php echo esc_attr($opt); ?>" <?php selected($filter_val, $opt); ?>>
                                 <?php echo esc_html($opt); ?>
@@ -446,10 +524,24 @@ function prices_options_page_html() {
                     </div>
 
                     <div class="wp-list-table-wrapper">
-                        <div class="wp-list-table <?php echo ($active_tab === 'course') ? 'wp-list-table-course' : 'wp-list-table-single'; ?>">
+                        <div class="wp-list-table <?php echo ($active_tab === 'course') ? 'wp-list-table-course' : (($active_tab === 'package') ? 'wp-list-table-package' : 'wp-list-table-single'); ?>">
                             <div class="wp-list-table-head">
-                                <?php foreach ($head_table as $head): ?>
-                                    <div class="wp-list-table-head-item"><?php echo esc_html($head); ?></div>
+                                <?php foreach ($head_table as $idx => $head): 
+                                    $field_key = isset($fields[$idx]) ? $fields[$idx] : '';
+                                    $is_sortable = in_array($field_key, $sortable_fields);
+                                ?>
+                                    <?php if ($is_sortable): 
+                                        $is_active = ($orderby === $field_key);
+                                        $next_order = ($is_active && $order === 'asc') ? 'desc' : 'asc';
+                                        $sort_url = add_query_arg(array('orderby' => $field_key, 'order' => $next_order, 'paged' => 1));
+                                        $sort_class = $is_active ? 'sorted ' . esc_attr($order) : 'sortable';
+                                    ?>
+                                        <div class="wp-list-table-head-item <?php echo $sort_class; ?>">
+                                            <a href="<?php echo esc_url($sort_url); ?>"><?php echo esc_html($head); ?><span class="sort-indicator"></span></a>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="wp-list-table-head-item"><?php echo esc_html($head); ?></div>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </div>
                             <div class="wp-list-table-body">
@@ -460,11 +552,11 @@ function prices_options_page_html() {
                                         ?>
                                             <?php if ($field === 'code'): ?>
                                                 <div class="wp-list-table-body-item-cell"><code><?php echo esc_html($val); ?></code></div>
-                                            <?php elseif ($field === 'product_master_name' || $field === 'course_name'): ?>
+                                            <?php elseif ($field === 'product_master_name' || $field === 'course_name' || $field === 'package_name'): ?>
                                                 <div class="wp-list-table-body-item-cell product-name"><?php echo esc_html($val); ?></div>
-                                            <?php elseif ($field === 'quantity' || $field === 'session'): ?>
+                                            <?php elseif ($field === 'quantity' || $field === 'session' || $field === 'initial_qty'): ?>
                                                 <div class="wp-list-table-body-item-cell quantity"><?php echo esc_html($val); ?></div>
-                                            <?php elseif ($field === 'normal_price'): ?>
+                                            <?php elseif ($field === 'normal_price' || $field === 'package_price'): ?>
                                                 <div class="wp-list-table-body-item-cell price"><?php echo esc_html($val); ?></div>
                                             <?php else: ?>
                                                 <div class="wp-list-table-body-item-cell"><?php echo esc_html($val); ?></div>
@@ -521,6 +613,8 @@ function prices_shortcode( $atts ) {
     $search_pools[] = isset($data['items']) ? $data['items'] : array();
     // Then Search Course Prices
     $search_pools[] = isset($data['course_items']) ? $data['course_items'] : array();
+    // Then Search Package Prices
+    $search_pools[] = isset($data['package_items']) ? $data['package_items'] : array();
     
     // Find item
     $found_item = null;

@@ -27,6 +27,10 @@ function product_image_get_categories() {
         'review' => 'Review',
         'influencer_celebrity' => 'Influencer & Celebrity',
         'location' => 'Location',
+        'promotion' => 'Promotion',
+        'price' => 'Price',
+        'banner' => 'Banner',
+        'button' => 'Button',
     );
 }
 

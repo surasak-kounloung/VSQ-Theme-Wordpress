@@ -49,27 +49,37 @@ jQuery(document).ready(function($) {
     });
 
     // Media Uploader
+    var ctaFrame;
+    var ctaCurrentButton;
+
     $(document).on('click', '.upload-cta-image', function(e) {
         e.preventDefault();
-        var button = $(this);
-        var container = button.closest('.cta-field');
-        var preview = container.find('.cta-image-preview');
-        var inputId = container.find('.cta-image-id');
+        ctaCurrentButton = $(this);
         
-        var frame = wp.media({
+        if (ctaFrame) {
+            ctaFrame.open();
+            return;
+        }
+        
+        ctaFrame = wp.media({
             title: 'Select Image',
             multiple: false,
             library: { type: 'image' },
             button: { text: 'Use this Image' }
         });
 
-        frame.on('select', function() {
-            var attachment = frame.state().get('selection').first().toJSON();
+        ctaFrame.on('select', function() {
+            var attachment = ctaFrame.state().get('selection').first().toJSON();
+            
+            var container = ctaCurrentButton.closest('.cta-field');
+            var preview = container.find('.cta-image-preview');
+            var inputId = container.find('.cta-image-id');
+            
             inputId.val(attachment.id);
             preview.html('<img src="' + attachment.url + '">');
-            button.text('Change Image');
+            ctaCurrentButton.text('Change Image');
         });
 
-        frame.open();
+        ctaFrame.open();
     });
 });

@@ -1,15 +1,17 @@
 jQuery(document).ready(function($) {
     // Media Uploader Logic
     var mediaUploader;
+    var currentButton;
     
     $(document).on('click', '.sl-upload-image', function(e) {
         e.preventDefault();
-        var button = $(this);
-        var wrapper = button.closest('.sl-image-preview-wrapper');
-        var inputField = wrapper.find('.sl-image-url');
-        var idField = wrapper.find('.sl-image-id'); // ID field selector
-        var previewDiv = wrapper.find('.sl-image-preview');
-        var removeBtn = wrapper.find('.sl-remove-image');
+        currentButton = $(this);
+
+        // If the media frame already exists, reopen it.
+        if (mediaUploader) {
+            mediaUploader.open();
+            return;
+        }
 
         // Create the media frame.
         mediaUploader = wp.media.frames.file_frame = wp.media({
@@ -24,6 +26,13 @@ jQuery(document).ready(function($) {
         mediaUploader.on('select', function() {
             var attachment = mediaUploader.state().get('selection').first().toJSON();
             
+            // Use currentButton to find the wrapper and fields
+            var wrapper = currentButton.closest('.sl-image-preview-wrapper');
+            var inputField = wrapper.find('.sl-image-url');
+            var idField = wrapper.find('.sl-image-id'); // ID field selector
+            var previewDiv = wrapper.find('.sl-image-preview');
+            var removeBtn = wrapper.find('.sl-remove-image');
+            
             inputField.val(attachment.url); // Save URL
             if(idField.length) {
                 idField.val(attachment.id); // Save ID
@@ -31,7 +40,7 @@ jQuery(document).ready(function($) {
             
             previewDiv.html('<img src="' + attachment.url + '">');
             
-            button.hide();
+            currentButton.hide();
             removeBtn.show();
         });
 

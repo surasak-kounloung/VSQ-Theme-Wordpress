@@ -17,7 +17,7 @@ function cta_footer_add_admin_menu() {
         'cta-footer-settings',
         'cta_footer_options_page_html',
         'dashicons-button',
-        49
+        50
     );
 }
 add_action('admin_menu', 'cta_footer_add_admin_menu');

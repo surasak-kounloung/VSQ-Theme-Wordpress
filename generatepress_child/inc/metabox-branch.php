@@ -164,6 +164,7 @@ function branch_render_meta_box( $post ) {
                         'teeny' => false,
                         'quicktags' => true,
                         'drag_drop_upload' => false,
+                        'wpautop' => false,
                         'tinymce' => array(
                             'wp_autoresize_on' => false,
                             'resize' => false,

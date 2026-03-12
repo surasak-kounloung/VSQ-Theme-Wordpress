@@ -16,7 +16,7 @@ function popup_add_admin_menu() {
         'popup-settings',
         'popup_options_page_html',
         'dashicons-buddicons-tracking',
-        50
+        51
     );
 }
 add_action( 'admin_menu', 'popup_add_admin_menu' );

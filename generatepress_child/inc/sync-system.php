@@ -152,6 +152,7 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender' ) {
         'popup_data',
         'detail_branch_data',
         'services_list_data',
+        'award_list_data',
     );
 
     // List of post types to sync

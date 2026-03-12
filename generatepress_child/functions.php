@@ -10,7 +10,7 @@
  * Include Options Pages
  */
 /** Meta Boxes */
-require_once get_stylesheet_directory() . '/inc/metabox-header-footer.php';
+require_once get_stylesheet_directory() . '/inc/metabox-header-footer-code.php';
 require_once get_stylesheet_directory() . '/inc/metabox-doctor.php';
 require_once get_stylesheet_directory() . '/inc/metabox-case-review.php';
 require_once get_stylesheet_directory() . '/inc/metabox-branch.php';
@@ -24,6 +24,7 @@ require_once get_stylesheet_directory() . '/inc/options-cta-footer.php';
 require_once get_stylesheet_directory() . '/inc/options-popup.php';
 require_once get_stylesheet_directory() . '/inc/options-detail-branch.php';
 require_once get_stylesheet_directory() . '/inc/options-services-list.php';
+require_once get_stylesheet_directory() . '/inc/options-award-list.php';
 
 /** Sync System */
 require_once get_stylesheet_directory() . '/inc/sync-system.php';
@@ -37,7 +38,7 @@ function load_google_fonts() {
     ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@100;200;300;400;500;600;700&family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
     <?php
 }
 
@@ -54,11 +55,29 @@ function load_all_style() {
     wp_enqueue_style( 'pxtovw-style', get_stylesheet_directory_uri() . '/assets/css/pxtovw.css', false, filemtime( get_stylesheet_directory() . '/assets/css/pxtovw.css' ), 'all' );
     wp_enqueue_style( 'main-style', get_stylesheet_directory_uri() . '/assets/css/main.css', false, filemtime( get_stylesheet_directory() . '/assets/css/main.css' ), 'all' );
     wp_enqueue_style( 'cta-footer-style', get_stylesheet_directory_uri() . '/assets/css/cta-footer.css', false, filemtime( get_stylesheet_directory() . '/assets/css/cta-footer.css' ), 'all' );
-    // if ( is_singular( 'post' ) || is_singular( 'posts_en' ) ) {
-    //     wp_enqueue_style( 'blogs-style', get_stylesheet_directory_uri() . '/assets/css/blogs.css', false, '1.0', 'all' );
-    // }
+
+    // Posts Style
+    if ( is_singular( 'post' ) || is_singular( 'posts_en' ) ) {
+        wp_enqueue_style( 'posts-style', get_stylesheet_directory_uri() . '/assets/css/post.css', false, filemtime( get_stylesheet_directory() . '/assets/css/post.css' ), 'all' );
+    }
+    // Blogs Style
+    if ( is_category() || is_tag() || is_post_type_archive( 'post' ) ) {
+        wp_enqueue_style( 'blogs-style', get_stylesheet_directory_uri() . '/assets/css/blogs.css', false, filemtime( get_stylesheet_directory() . '/assets/css/blogs.css' ), 'all' );
+    }
+
 	// JS
     wp_enqueue_script( 'main-script', get_stylesheet_directory_uri() . '/assets/js/main.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/main.js' ), true );
+
+    // Load twentytwenty CSS only on pages with .img-before-after
+    if ( is_singular() ) {
+        global $post;
+        if ( $post && strpos( $post->post_content, 'img-before-after' ) !== false ) {
+            wp_enqueue_style( 'twentytwenty-style', get_stylesheet_directory_uri() . '/assets/css/twentytwenty/twentytwenty.css', false, 1.0, 'all' );
+            wp_enqueue_script( 'eventmove-script', get_stylesheet_directory_uri() . '/assets/js/twentytwenty/jquery.event.move.js', array(), 1.0, true );
+            wp_enqueue_script( 'twentytwenty-script', get_stylesheet_directory_uri() . '/assets/js/twentytwenty/jquery.twentytwenty.js', array(), 1.0, true );
+            wp_enqueue_script( 'img-before-after-script', get_stylesheet_directory_uri() . '/assets/js/img-before-after.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/img-before-after.js' ), true );
+        }
+    }
 }
 
 
@@ -729,6 +748,7 @@ function vsq_hide_save_button_if_not_sender() {
         'toplevel_page_cta-footer-settings',
         'toplevel_page_popup-settings',
         'toplevel_page_services-list-settings',
+        'toplevel_page_award-list-settings',
         'page_branch_page_options-detail-branch',
         'toplevel_page_vsq-sync-settings'
     );
@@ -1152,6 +1172,18 @@ function process_shortcodes_in_rankmath_breadcrumbs( $crumbs, $class ) {
     return $crumbs;
 }
 add_filter( 'rank_math/frontend/breadcrumb/items', 'process_shortcodes_in_rankmath_breadcrumbs', 10, 2 );
+
+
+/**
+ * Process shortcodes in WordPress document <title> tag
+ */
+function process_shortcodes_in_document_title( $title_parts ) {
+    foreach ( $title_parts as $key => $part ) {
+        $title_parts[ $key ] = do_shortcode( $part );
+    }
+    return $title_parts;
+}
+add_filter( 'document_title_parts', 'process_shortcodes_in_document_title' );
 
 
 /**

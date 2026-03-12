@@ -1,26 +1,36 @@
 jQuery(document).ready(function($) {
     // Media Uploader
+    var popupFrame;
+    var popupCurrentButton;
+
     $(document).on('click', '.upload-popup-image', function(e) {
         e.preventDefault();
-        var button = $(this);
-        var container = button.closest('.popup-field');
-        var preview = container.find('.popup-image-preview');
-        var inputId = container.find('.popup-image-id');
+        popupCurrentButton = $(this);
         
-        var frame = wp.media({
+        if (popupFrame) {
+            popupFrame.open();
+            return;
+        }
+        
+        popupFrame = wp.media({
             title: 'Select Popup Image',
             multiple: false,
             library: { type: 'image' },
             button: { text: 'Use this Image' }
         });
 
-        frame.on('select', function() {
-            var attachment = frame.state().get('selection').first().toJSON();
+        popupFrame.on('select', function() {
+            var attachment = popupFrame.state().get('selection').first().toJSON();
+            
+            var container = popupCurrentButton.closest('.popup-field');
+            var preview = container.find('.popup-image-preview');
+            var inputId = container.find('.popup-image-id');
+            
             inputId.val(attachment.id);
             preview.html('<img src="' + attachment.url + '">');
-            button.text('Change Image');
+            popupCurrentButton.text('Change Image');
         });
 
-        frame.open();
+        popupFrame.open();
     });
 });

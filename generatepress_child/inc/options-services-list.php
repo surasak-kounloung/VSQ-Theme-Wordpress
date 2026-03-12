@@ -91,35 +91,35 @@ function sl_options_page_html()
 
                     <!-- Right Sidebar (Publish Box) -->
                     <div id="postbox-container-1" class="postbox-container">
-                        <?php 
+                        <?php
                         // Check if user is a sender
                         $is_sender = false;
-                        if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
-                            $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
-                            $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
-                        } 
-                        
-                        if ( $is_sender ) {
+                        if (defined('VSQ_SYNC_OPTION_KEY')) {
+                            $vsq_settings = get_option(VSQ_SYNC_OPTION_KEY, array());
+                            $is_sender = isset($vsq_settings['role']) && $vsq_settings['role'] === 'sender';
+                        }
+
+                        if ($is_sender) {
                         ?>
-                        <div id="side-sortables" class="meta-box-sortables">
-                            <div id="submitdiv" class="postbox">
-                                <div class="postbox-header">
-                                    <h2 class="hndle">Publish</h2>
-                                    <div class="handle-actions hide-if-no-js">
-                                        <button type="button" class="handlediv" aria-expanded="true"><span class="screen-reader-text">Toggle panel: Publish</span><span class="toggle-indicator" aria-hidden="true"></span></button>
-                                    </div>
-                                </div>
-                                <div class="inside">
-                                    <div id="major-publishing-actions">
-                                        <div id="publishing-action">
-                                            <span class="spinner"></span>
-                                            <?php submit_button('Update', 'primary large', 'submit', false); ?>
+                            <div id="side-sortables" class="meta-box-sortables">
+                                <div id="submitdiv" class="postbox">
+                                    <div class="postbox-header">
+                                        <h2 class="hndle">Publish</h2>
+                                        <div class="handle-actions hide-if-no-js">
+                                            <button type="button" class="handlediv" aria-expanded="true"><span class="screen-reader-text">Toggle panel: Publish</span><span class="toggle-indicator" aria-hidden="true"></span></button>
                                         </div>
-                                        <div class="clear"></div>
+                                    </div>
+                                    <div class="inside">
+                                        <div id="major-publishing-actions">
+                                            <div id="publishing-action">
+                                                <span class="spinner"></span>
+                                                <?php submit_button('Update', 'primary large', 'submit', false); ?>
+                                            </div>
+                                            <div class="clear"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                         <?php } ?>
 
                         <!-- Shortcode Usage Box -->
@@ -161,10 +161,10 @@ function sl_options_page_html()
                                         ?>
                                     </div>
 
-                                    <?php if ( $is_sender ) { ?>
-                                    <div class="sl-actions">
-                                        <button class="button button-primary sl-repeater-add">Add Row</button>
-                                    </div>
+                                    <?php if ($is_sender) { ?>
+                                        <div class="sl-actions">
+                                            <button class="button button-primary sl-repeater-add">Add Row</button>
+                                        </div>
                                     <?php } ?>
 
                                 </div>
@@ -196,20 +196,20 @@ function sl_render_row($index, $data)
 
     // Check if user is a sender
     $is_sender = false;
-    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
-        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
-        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
-    } 
+    if (defined('VSQ_SYNC_OPTION_KEY')) {
+        $vsq_settings = get_option(VSQ_SYNC_OPTION_KEY, array());
+        $is_sender = isset($vsq_settings['role']) && $vsq_settings['role'] === 'sender';
+    }
 
 ?>
     <div class="sl-repeater-row">
-        <div class="sl-row-header<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>">
+        <div class="sl-row-header<?php if (! $is_sender) { ?> hide-click<?php } ?>">
             <span class="sl-row-handle dashicons dashicons-menu"></span>
             <span class="sl-row-number"><?php echo is_numeric($index) ? $index + 1 : ''; ?></span>
-            <?php if ( $is_sender ) { ?>
-            <span class="sl-row-actions">
-                <span class="sl-remove-row dashicons dashicons-no-alt" title="Remove row"></span>
-            </span>
+            <?php if ($is_sender) { ?>
+                <span class="sl-row-actions">
+                    <span class="sl-remove-row dashicons dashicons-no-alt" title="Remove row"></span>
+                </span>
             <?php } ?>
         </div>
         <div class="sl-row-content">
@@ -242,13 +242,13 @@ function sl_render_row($index, $data)
                     <div class="sl-field">
                         <label>External URL</label>
                         <div class="sl-field-checkbox">
-                            <input type="checkbox" class="sl-external-url-checkbox<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>" name="services_list_data[<?php echo $index; ?>][external_url]" value="1" <?php checked($external_url, '1'); ?><?php if ( ! $is_sender ) { ?> onclick="return false;"<?php } ?>>
+                            <input type="checkbox" class="sl-external-url-checkbox<?php if (! $is_sender) { ?> hide-click<?php } ?>" name="services_list_data[<?php echo $index; ?>][external_url]" value="1" <?php checked($external_url, '1'); ?><?php if (! $is_sender) { ?> onclick="return false;" <?php } ?>>
                             Enable
                         </div>
                     </div>
                     <div class="sl-field" style="margin-top: 15px;">
                         <label>URL Path / External URL</label>
-                        <input type="text" name="services_list_data[<?php echo $index; ?>][url]" value="<?php echo esc_attr($url); ?>" placeholder="<?php echo ($external_url === '1') ? 'https://...' : '/service-path/'; ?>" class="widefat sl-url-input<?php if ( ! $is_sender ) { ?> hide-click<?php } ?>"<?php if ( ! $is_sender ) { ?> readonly<?php } ?>>
+                        <input type="text" name="services_list_data[<?php echo $index; ?>][url]" value="<?php echo esc_attr($url); ?>" placeholder="<?php echo ($external_url === '1') ? 'https://...' : '/service-path/'; ?>" class="widefat sl-url-input<?php if (! $is_sender) { ?> hide-click<?php } ?>" <?php if (! $is_sender) { ?> readonly<?php } ?>>
                     </div>
                 </div>
             </div>
@@ -256,3 +256,59 @@ function sl_render_row($index, $data)
     </div>
 <?php
 }
+
+// 5. Shortcode [services_list]
+function sl_shortcode_render($atts)
+{
+    $items = get_option('services_list_data', array());
+    if (empty($items) || !is_array($items)) {
+        return '';
+    }
+
+    ob_start();
+?>
+    <div class="kb-row-layout-wrap alignnone wp-block-kadence-rowlayout services-list">
+        <div class="kt-row-column-wrap kt-row-layout-equal kt-tab-layout-inherit kt-mobile-layout-row kt-row-valign-top">
+            <?php foreach ($items as $item) :
+                $image_url = isset($item['image_url']) ? $item['image_url'] : '';
+                $image_id = isset($item['image_id']) ? $item['image_id'] : '';
+                $url = isset($item['url']) ? $item['url'] : '';
+                $external = isset($item['external_url']) && $item['external_url'] === '1';
+                $target = $external ? '_blank' : '';
+
+                if (empty($image_url)) continue;
+            ?>
+            <div class="wp-block-kadence-column">
+                <div class="kt-inside-inner-col">
+                    <figure class="wp-block-image size-full">
+                    <?php if ($url) { ?>
+                        <a href="<?php if ( $external ) { echo esc_url($url); } else { echo esc_url( home_url( $url ) ); } ?>"<?php if ( $target ) { ?> target="<?php echo esc_attr($target); ?>"<?php } ?>>
+                    <?php } ?>
+                        <?php if ($image_id) { ?>
+                            <?php echo wp_get_attachment_image($image_id, 'full', false, array('class' => '')); ?>
+                        <?php } else { ?>
+                            <img src="<?php echo esc_url($image_url); ?>" alt="Service Image">
+                        <?php } ?>
+                    <?php if ($url) { ?>
+                        </a>
+                    <?php } ?>
+                    </figure>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php
+    return ob_get_clean();
+}
+add_shortcode('services_list', 'sl_shortcode_render');
+
+// Enqueue Frontend Assets for Shortcode
+function sl_frontend_assets()
+{
+    global $post;
+    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'services_list')) {
+        wp_enqueue_style('services-list-style', get_stylesheet_directory_uri() . '/assets/css/services-list.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/services-list.css' ));
+    }
+}
+add_action('wp_enqueue_scripts', 'sl_frontend_assets', 99);

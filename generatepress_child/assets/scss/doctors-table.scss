@@ -1,0 +1,256 @@
+$max-viewport-nb: 1920;
+$max-viewport-mb: 768;
+@function get-vw-nb($target) {
+    $vw-context: ($max-viewport-nb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
+}
+@function get-vw-mb($target) {
+    $vw-context: ($max-viewport-mb * .01) * 1px;
+    @return ($target/$vw-context) * 1vw;
+}
+
+.doctors-table {
+    width: 100%;
+}
+.doctors-table table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    padding: 0 15px 20px;
+    border-radius: 24px;
+    border: 3px solid #435ba2;
+    overflow: hidden;
+    box-shadow: 0 4px 10px 1px rgba(0,0,0,0.3);
+}
+.doctors-table table th, 
+.site-content .doctors-table table th, 
+.doctors-table table td, 
+.site-content .doctors-table table td {
+    font-family: "IBM Plex Sans Thai", sans-serif;
+    line-height: 1.1;
+    text-align: center;
+    vertical-align: middle;
+}
+.doctors-table table th, 
+.site-content .doctors-table table th {
+    height: 60px;
+    font-size: 24px;
+    color: #435ba2;
+    font-weight: 600;
+    padding: 11px 0 0;
+    border: 2px solid #7e8ebb;
+    border-width: 0 2px 2px 0;
+    background-color: #fff;
+}
+.doctors-table table th:first-child, 
+.site-content .doctors-table table th:first-child {
+    width: 18.5%;
+}
+.doctors-table table th:last-child, 
+.site-content .doctors-table table th:last-child {
+    width: 115px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #34c21d;
+    font-weight: 600;
+    padding-left: 15px;
+    border-width: 0 0 2px 0;
+}
+.doctors-table table td, 
+.site-content .doctors-table table td {
+    font-size: 20px;
+    color: #435ba2;
+    font-weight: 500;
+    word-break: break-word;
+    padding: 12px 0 10px;
+    border-left: 0;
+    border-top: 2px solid #dce3f0;
+    border-right: 2px solid #7e8ebb;
+    border-bottom: 0;
+    background-color: #fff;
+}
+.doctors-table table td:first-child, 
+.site-content .doctors-table table td:first-child {
+    font-weight: 600;
+    text-align: left;
+    padding-left: 10px;
+}
+.doctors-table table td:last-child, 
+.site-content .doctors-table table td:last-child {
+    text-align: left;
+    padding-left: 15px;
+    border-width: 2px 0 0 0;
+}
+.doctors-table table tr:nth-child(odd) td, 
+.site-content .doctors-table table tr:nth-child(odd) td {
+    background-color: #f5fbff;
+}
+.doctors-table table tbody tr:first-child td, 
+.site-content .doctors-table table tbody tr:first-child td {
+    position: relative;
+    padding-top: 15px;
+}
+.doctors-table table tbody tr:first-child td::before, 
+.site-content .doctors-table table tbody tr:first-child td::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-top: 2px solid #dce3f0;
+}
+.doctors-table table tbody tr:last-child td, 
+.site-content .doctors-table table tbody tr:last-child td {
+    border-bottom: 2px solid #dce3f0;
+}
+.doctors-table table td a, 
+.site-content .doctors-table table td a {
+    color: #435ba2;
+    text-decoration: none;
+    word-break: break-word;
+    transition: color 0.25s ease;
+}
+.doctors-table table td a:hover, 
+.site-content .doctors-table table td a:hover {
+    color: #4096e2;
+}
+.doctors-table table td.doctors-table-closed-msg, 
+.site-content .doctors-table table td.doctors-table-closed-msg {
+    color: #999;
+    text-align: center;
+    font-weight: 600;
+    padding-left: 15px;
+    padding-right: 15px;
+    background-color: #f0f0f0;
+}
+@media (max-width: 1919px) {
+    .doctors-table table {
+        padding: 0 get-vw-nb(15px) get-vw-nb(20px);
+        border-radius: get-vw-nb(24px);
+        border-width: get-vw-nb(3px);
+        box-shadow: 0 get-vw-nb(4px) get-vw-nb(10px) 1px rgba(0,0,0,0.3);
+    }
+    .doctors-table table th, 
+    .site-content .doctors-table table th {
+        height: get-vw-nb(60px);
+        font-size: get-vw-nb(24px);
+        padding: get-vw-nb(11px) 0 0;
+        border-width: 0 get-vw-nb(2px) get-vw-nb(2px) 0;
+    }
+    .doctors-table table th:last-child, 
+    .site-content .doctors-table table th:last-child {
+        width: get-vw-nb(115px);
+        padding-left: get-vw-nb(15px);
+        border-width: 0 0 get-vw-nb(2px) 0;
+    }
+    .doctors-table table td, 
+    .site-content .doctors-table table td {
+        font-size: get-vw-nb(20px);
+        padding: get-vw-nb(12px) 0 get-vw-nb(10px);
+        border-top: get-vw-nb(2px) solid #dce3f0;
+        border-right: get-vw-nb(2px) solid #7e8ebb;
+    }
+    .doctors-table table td:first-child, 
+    .site-content .doctors-table table td:first-child {
+        padding-left: get-vw-nb(10px);
+    }
+    .doctors-table table td:last-child, 
+    .site-content .doctors-table table td:last-child {
+        padding-left: get-vw-nb(15px);
+        border-width: get-vw-nb(2px) 0 0 0;
+    }
+    .doctors-table table tbody tr:first-child td, 
+    .site-content .doctors-table table tbody tr:first-child td {
+        padding-top: get-vw-nb(15px);
+    }
+    .doctors-table table tbody tr:first-child td::before, 
+    .site-content .doctors-table table tbody tr:first-child td::before {
+        top: get-vw-nb(2px);
+        height: get-vw-nb(2px);
+        border-top: get-vw-nb(2px) solid #dce3f0;
+    }
+    .doctors-table table tbody tr:last-child td, 
+    .site-content .doctors-table table tbody tr:last-child td {
+        border-bottom: get-vw-nb(2px) solid #dce3f0;
+    }
+    .doctors-table table td.doctors-table-closed-msg, 
+    .site-content .doctors-table table td.doctors-table-closed-msg {
+        padding-left: get-vw-nb(15px);
+        padding-right: get-vw-nb(15px);
+    }
+}
+@media (max-width: 767px) {
+    .doctors-table table {
+        padding: 0 get-vw-mb(10px) get-vw-mb(12px);
+        border-radius: get-vw-mb(20px);
+        border-width: get-vw-mb(3px);
+        box-shadow: 0 get-vw-mb(2px) get-vw-mb(6px) 1px rgba(0,0,0,0.3);
+    }
+    .doctors-table table th, 
+    .site-content .doctors-table table th, 
+    .doctors-table table td, 
+    .site-content .doctors-table table td {
+        line-height: 1.2;
+    }
+    .doctors-table table th, 
+    .site-content .doctors-table table th {
+        height: get-vw-mb(38px);
+        font-size: get-vw-mb(15px);
+        padding: get-vw-mb(8px) 0 0;
+        border-width: 0 get-vw-mb(2px) get-vw-mb(2px) 0;
+    }
+    .doctors-table table th:first-child, 
+    .site-content .doctors-table table th:first-child {
+        width: 20.5%;
+    }
+    .doctors-table table th:last-child, 
+    .site-content .doctors-table table th:last-child {
+        width: get-vw-mb(72px);
+        padding-left: get-vw-mb(8px);
+        border-width: 0 0 get-vw-mb(2px) 0;
+    }
+    .doctors-table table td, 
+    .site-content .doctors-table table td {
+        font-size: get-vw-mb(13px);
+        padding: get-vw-mb(6px) 0 get-vw-mb(5px);
+        border-top: get-vw-mb(2px) solid #dce3f0;
+        border-right: get-vw-mb(2px) solid #7e8ebb;
+    }
+    .doctors-table table td:first-child, 
+    .site-content .doctors-table table td:first-child {
+        padding-left: get-vw-mb(6px);
+    }
+    .doctors-table table td:last-child, 
+    .site-content .doctors-table table td:last-child {
+        padding-left: get-vw-mb(8px);
+        border-width: get-vw-mb(2px) 0 0 0;
+    }
+    .doctors-table table tbody tr:first-child td, 
+    .site-content .doctors-table table tbody tr:first-child td {
+        padding-top: get-vw-mb(10px);
+    }
+    .doctors-table table tbody tr:first-child td::before, 
+    .site-content .doctors-table table tbody tr:first-child td::before {
+        top: 1px;
+        height: get-vw-mb(2px);
+        border-top: get-vw-mb(2px) solid #dce3f0;
+    }
+    .doctors-table table tbody tr:last-child td, 
+    .site-content .doctors-table table tbody tr:last-child td {
+        border-bottom: get-vw-mb(2px) solid #dce3f0;
+    }
+    .doctors-table table td a:hover, 
+    .site-content .doctors-table table td a:hover {
+        color: #113081;
+    }
+    .doctors-table table td a:active, 
+    .site-content .doctors-table table td a:active {
+        color: #4096e2;
+    }
+    .doctors-table table td.doctors-table-closed-msg, 
+    .site-content .doctors-table table td.doctors-table-closed-msg {
+        padding-left: get-vw-mb(10px);
+        padding-right: get-vw-mb(10px);
+    }
+}
