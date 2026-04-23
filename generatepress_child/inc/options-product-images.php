@@ -13,6 +13,7 @@ function product_image_get_categories() {
         'filler' => 'Filler',
         'botox' => 'Botox',
         'hifu' => 'HIFU',
+        'ultraformer' => 'Ultraformer',
         'ulthera' => 'Ulthera',
         'thermage' => 'Thermage',
         'meso' => 'Meso',
@@ -87,6 +88,46 @@ function product_image_validate_data( $input ) {
         return get_option( 'product_images_data' );
     }
 
+    // Check role: only sender site should generate IDs (receiver must trust sender's IDs)
+    $is_sender = false;
+    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
+        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
+    }
+
+    if ( ! $is_sender ) {
+        // On receiver (or standalone): keep incoming data as-is so IDs stay in sync with sender
+        return $input;
+    }
+
+    // Assign unique_id for new items (never reuse old IDs)
+    $old_data = get_option( 'product_images_data', array() );
+    $next_id = isset( $old_data['next_id'] ) ? intval( $old_data['next_id'] ) : 1;
+
+    // Find the highest existing unique_id to ensure counter never goes backward
+    if ( ! empty( $items ) ) {
+        foreach ( $items as $item ) {
+            if ( isset( $item['unique_id'] ) && intval( $item['unique_id'] ) >= $next_id ) {
+                $next_id = intval( $item['unique_id'] ) + 1;
+            }
+        }
+    }
+
+    // Assign IDs to items that don't have one yet
+    if ( ! empty( $items ) ) {
+        foreach ( $items as $index => $item ) {
+            if ( empty( $item['unique_id'] ) ) {
+                $items[ $index ]['unique_id'] = $next_id;
+                $next_id++;
+            } else {
+                $items[ $index ]['unique_id'] = intval( $item['unique_id'] );
+            }
+        }
+        $input['items'] = $items;
+    }
+
+    $input['next_id'] = $next_id;
+
     return $input;
 }
 
@@ -116,8 +157,131 @@ function product_image_admin_assets( $hook ) {
         filemtime( get_stylesheet_directory() . '/assets/js/admin/admin-product-images.js' ), 
         true 
     );
+
+    wp_localize_script( 'product-images-admin-js', 'productImageAdmin', array(
+        'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+        'findUsagesNonce' => wp_create_nonce( 'product_image_find_usages_action' ),
+        'i18n'            => array(
+            'loading'     => 'กำลังค้นหา...',
+            'noResults'   => 'ไม่พบหน้าที่ใช้ภาพนี้',
+            'errorLoad'   => 'เกิดข้อผิดพลาดในการค้นหา',
+            'foundText'   => 'พบการใช้งานทั้งหมด',
+            'itemsText'   => 'รายการ',
+            'viewLabel'   => 'ดูหน้า',
+            'editLabel'   => 'แก้ไข',
+            'modalTitle'  => 'URL ที่ใช้ภาพนี้',
+            'closeLabel'  => 'ปิด',
+        ),
+    ) );
 }
 add_action( 'admin_enqueue_scripts', 'product_image_admin_assets' );
+
+/**
+ * 3.1 Bulk Count Usages
+ * Scan ฐานข้อมูล 1 ครั้งแล้ว map shortcode กลับไปแต่ละ item
+ * คืนค่า: array( item_index => usage_count )
+ */
+function product_image_get_usage_counts( $items ) {
+    if ( empty( $items ) || ! is_array( $items ) ) {
+        return array();
+    }
+
+    global $wpdb;
+
+    // สร้าง lookup map: shortcode_name/unique_id → item_index
+    $name_to_idx = array();
+    $id_to_idx   = array();
+    foreach ( $items as $idx => $item ) {
+        if ( ! empty( $item['shortcode_name'] ) ) {
+            $name_to_idx[ $item['shortcode_name'] ] = $idx;
+        }
+        if ( ! empty( $item['unique_id'] ) ) {
+            $id_to_idx[ intval( $item['unique_id'] ) ] = $idx;
+        }
+    }
+
+    if ( empty( $name_to_idx ) && empty( $id_to_idx ) ) {
+        return array();
+    }
+
+    $like    = '%' . $wpdb->esc_like( '[product_img' ) . '%';
+    $statuses = array( 'publish', 'private', 'draft', 'pending', 'future' );
+    $status_place = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
+
+    // ดึง content จาก 3 แหล่งที่มี [product_img อยู่
+    $rows_posts = $wpdb->get_results( $wpdb->prepare(
+        "SELECT ID as key_id, post_content as content
+           FROM {$wpdb->posts}
+          WHERE post_status IN ($status_place)
+            AND post_type NOT IN ('revision','attachment','nav_menu_item')
+            AND post_content LIKE %s",
+        array_merge( $statuses, array( $like ) )
+    ) );
+
+    $rows_meta = $wpdb->get_results( $wpdb->prepare(
+        "SELECT p.ID as key_id, pm.meta_value as content
+           FROM {$wpdb->postmeta} pm
+           INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+          WHERE p.post_status IN ($status_place)
+            AND p.post_type NOT IN ('revision','attachment','nav_menu_item')
+            AND pm.meta_value LIKE %s",
+        array_merge( $statuses, array( $like ) )
+    ) );
+
+    $rows_opts = $wpdb->get_results( $wpdb->prepare(
+        "SELECT CONCAT('opt_', option_id) as key_id, option_value as content
+           FROM {$wpdb->options}
+          WHERE option_value LIKE %s",
+        array( $like )
+    ) );
+
+    // Regex รองรับทั้ง name="xxx" และ name=\"xxx\" (JSON escaped ใน Elementor)
+    $pattern_name = '/\[product_img[^\]]*?\bname\s*=\s*\\\\?"([^"\\\\]+)\\\\?"/i';
+    $pattern_id   = '/\[product_img[^\]]*?\bid\s*=\s*\\\\?"(\d+)\\\\?"/i';
+
+    // item_index → array of unique keys (post_id / opt_id) ที่อ้างถึง
+    $item_refs = array();
+
+    $all_rows = array_merge( $rows_posts, $rows_meta, $rows_opts );
+    foreach ( $all_rows as $row ) {
+        if ( empty( $row->content ) ) {
+            continue;
+        }
+
+        $matched_indices = array();
+
+        if ( preg_match_all( $pattern_name, $row->content, $m_name ) && ! empty( $m_name[1] ) ) {
+            foreach ( $m_name[1] as $n ) {
+                if ( isset( $name_to_idx[ $n ] ) ) {
+                    $matched_indices[ $name_to_idx[ $n ] ] = true;
+                }
+            }
+        }
+
+        if ( preg_match_all( $pattern_id, $row->content, $m_id ) && ! empty( $m_id[1] ) ) {
+            foreach ( $m_id[1] as $i ) {
+                $int_id = intval( $i );
+                if ( isset( $id_to_idx[ $int_id ] ) ) {
+                    $matched_indices[ $id_to_idx[ $int_id ] ] = true;
+                }
+            }
+        }
+
+        foreach ( array_keys( $matched_indices ) as $item_idx ) {
+            if ( ! isset( $item_refs[ $item_idx ] ) ) {
+                $item_refs[ $item_idx ] = array();
+            }
+            $item_refs[ $item_idx ][ $row->key_id ] = true;
+        }
+    }
+
+    $counts = array();
+    foreach ( $item_refs as $idx => $keys ) {
+        $counts[ $idx ] = count( $keys );
+    }
+
+    return $counts;
+}
 
 // 4. Render Options Page
 function product_image_options_page_html() {
@@ -128,6 +292,7 @@ function product_image_options_page_html() {
     $data = get_option( 'product_images_data', array() );
     $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
     $categories = product_image_get_categories();
+    $usage_counts = product_image_get_usage_counts( $items );
 
     ?>
     <div class="wrap">
@@ -181,6 +346,24 @@ function product_image_options_page_html() {
                                         </div>
                                         <div class="clear"></div>
                                     </div>
+                                    <?php
+                                    if ( $is_sender ) :
+                                        $force_sync_nonce = wp_create_nonce( 'product_image_force_sync_action' );
+                                    ?>
+                                    <div style="padding: 10px 12px 15px; border-top: 1px solid #dcdcde;">
+                                        <p style="margin: 0 0 8px; font-size: 12px; color: #646970;">
+                                            Force-push current data (including IDs) to all client sites. Use this if auto-sync did not update the receivers.
+                                        </p>
+                                        <div style="display: flex; justify-content: flex-start; align-items: center;">
+                                            <button type="button" class="button button-secondary" id="product-image-force-sync" data-nonce="<?php echo esc_attr( $force_sync_nonce ); ?>">
+                                                <span class="dashicons dashicons-update" style="vertical-align: middle; margin-right: 5px;"></span>
+                                                Force Sync Now
+                                            </button>
+                                            <span class="spinner" id="product-image-force-sync-spinner" style="float: none; margin-top: 0; margin-left: 10px;"></span>
+                                        </div>
+                                        <div id="product-image-force-sync-result" style="margin-top: 10px; display: none;"></div>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -210,7 +393,7 @@ function product_image_options_page_html() {
                                             <input type="text" id="product-image-search" class="search-field" placeholder="Search by Name...">
                                         </div>
                                         <div class="tablenav-pages">
-                                            <span class="displaying-num"><span id="total-items">0</span> items</span>
+                                            <span class="displaying-num"><span id="total-items" class="total-items">0</span> items</span>
                                             <span class="pagination-links">
                                                 <a href="#" class="first-page button disabled">&laquo;</a>
                                                 <a href="#" class="prev-page button disabled">&lsaquo;</a>
@@ -227,7 +410,8 @@ function product_image_options_page_html() {
                                         <?php 
                                         if ( ! empty( $items ) ) :
                                             foreach ( $items as $index => $row ) :
-                                                product_image_render_row( $index, $row );
+                                                $item_count = isset( $usage_counts[ $index ] ) ? intval( $usage_counts[ $index ] ) : 0;
+                                                product_image_render_row( $index, $row, $item_count );
                                             endforeach;
                                         endif; 
                                         ?>
@@ -243,6 +427,23 @@ function product_image_options_page_html() {
                                         <button class="button button-primary dt-repeater-add">Add New Image</button>
                                     </div>
                                     <?php } ?>
+
+                                    <!-- Pagination Toolbar -->
+                                    <div class="dt-toolbar tablenav top" style="margin-top: 25px; margin-bottom: 0;">
+                                        <div class="alignleft actions"></div>
+                                        <div class="tablenav-pages">
+                                            <span class="displaying-num"><span id="total-items" class="total-items">0</span> items</span>
+                                            <span class="pagination-links">
+                                                <a href="#" class="first-page button disabled">&laquo;</a>
+                                                <a href="#" class="prev-page button disabled">&lsaquo;</a>
+                                                <span class="paging-input">
+                                                    <span class="current-page">1</span> of <span class="total-pages">1</span>
+                                                </span>
+                                                <a href="#" class="next-page button disabled">&rsaquo;</a>
+                                                <a href="#" class="last-page button disabled">&raquo;</a>
+                                            </span>
+                                        </div>
+                                    </div>
 
                                 </div>
                             </div>
@@ -260,12 +461,53 @@ function product_image_options_page_html() {
         <script type="text/template" id="dt-repeater-template">
             <?php product_image_render_row( '{{index}}', array() ); ?>
         </script>
+
+        <!-- Find Usage Modal -->
+        <div class="dt-modal" id="dt-find-usage-modal" aria-hidden="true" role="dialog" aria-labelledby="dt-find-usage-modal-title">
+            <div class="dt-modal-backdrop" data-modal-close></div>
+            <div class="dt-modal-dialog" role="document">
+                <div class="dt-modal-header">
+                    <h2 class="dt-modal-title" id="dt-find-usage-modal-title">
+                        <span class="dashicons dashicons-admin-links"></span>
+                        URL ที่ใช้ภาพนี้
+                    </h2>
+                    <button type="button" class="dt-modal-close" data-modal-close aria-label="Close">
+                        <span class="dashicons dashicons-no-alt"></span>
+                    </button>
+                </div>
+                <div class="dt-modal-subtitle">
+                    <div class="dt-modal-item-info"></div>
+                </div>
+                <div class="dt-modal-body">
+                    <div class="dt-modal-state dt-modal-state--loading">
+                        <div class="dt-spinner"></div>
+                        <p>กำลังค้นหา...</p>
+                    </div>
+                    <div class="dt-modal-state dt-modal-state--empty" hidden>
+                        <span class="dashicons dashicons-info-outline"></span>
+                        <p>ไม่พบหน้าที่ใช้ภาพนี้</p>
+                    </div>
+                    <div class="dt-modal-state dt-modal-state--error" hidden>
+                        <span class="dashicons dashicons-warning"></span>
+                        <p>เกิดข้อผิดพลาดในการค้นหา</p>
+                    </div>
+                    <div class="dt-modal-state dt-modal-state--results" hidden>
+                        <div class="dt-modal-summary"></div>
+                        <ul class="dt-usage-list"></ul>
+                    </div>
+                </div>
+                <div class="dt-modal-footer">
+                    <button type="button" class="button button-close" data-modal-close>ปิด</button>
+                </div>
+            </div>
+        </div>
+
     </div>
     <?php
 }
 
 // Helper to render a single row
-function product_image_render_row( $index, $data ) {
+function product_image_render_row( $index, $data, $usage_count = 0 ) {
     // Extract values
     $category = isset( $data['category'] ) ? $data['category'] : array();
     // Ensure category is an array (backward compatibility)
@@ -276,6 +518,7 @@ function product_image_render_row( $index, $data ) {
     $shortcode_name = isset( $data['shortcode_name'] ) ? $data['shortcode_name'] : '';
     $image_url = isset( $data['image_url'] ) ? $data['image_url'] : '';
     $image_id = isset( $data['image_id'] ) ? $data['image_id'] : '';
+    $unique_id = isset( $data['unique_id'] ) ? $data['unique_id'] : '';
     
     $categories = product_image_get_categories();
 
@@ -287,9 +530,9 @@ function product_image_render_row( $index, $data ) {
     } 
     
     ?>
-    <div class="dt-repeater-row" data-category="<?php echo esc_attr( implode( ',', $category ) ); ?>">
+    <div class="dt-repeater-row" data-category="<?php echo esc_attr( implode( ',', $category ) ); ?>" data-unique-id="<?php echo esc_attr( $unique_id ); ?>">
         <div class="dt-row-header">
-            <span class="dt-row-title">Image Item</span>
+            <span class="dt-row-title">Image Item<?php echo ! empty( $unique_id ) ? ' #' . esc_html( $unique_id ) : ' (new)'; ?></span>
             <div class="dt-row-actions">
                  <span class="dt-toggle-row dashicons dashicons-minus"></span>
                  <?php if ( $is_sender ) { ?>
@@ -308,11 +551,18 @@ function product_image_render_row( $index, $data ) {
                     <div style="margin-top: 10px; margin-bottom: 5px;">
                         <input type="hidden" class="image-url-field" name="product_images_data[items][<?php echo $index; ?>][image_url]" value="<?php echo esc_attr($image_url); ?>">
                         <input type="hidden" class="image-id-field" name="product_images_data[items][<?php echo $index; ?>][image_id]" value="<?php echo esc_attr($image_id); ?>">
+                        <input type="hidden" class="unique-id-field" name="product_images_data[items][<?php echo $index; ?>][unique_id]" value="<?php echo esc_attr($unique_id); ?>">
                         <?php if ( $is_sender ) { ?>
                         <button type="button" class="button upload-image-button">Select Image</button>
                         <button type="button" class="button remove-image-button" style="color: #a00;">Remove</button>
                         <?php } ?>
                     </div>
+                </div>
+
+                <!-- ID -->
+                <div class="dt-field-col">
+                    <label>ID</label>
+                    <input type="text" value="<?php echo esc_attr( $unique_id ); ?>" placeholder="Auto-generated on save" class="hide-click" readonly>
                 </div>
 
                 <!-- Name -->
@@ -340,8 +590,60 @@ function product_image_render_row( $index, $data ) {
                 <!-- Shortcode Name -->
                 <div class="dt-field-col">
                     <label>Shortcode Name (Key)</label>
-                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][shortcode_name]" value="<?php echo esc_attr( $shortcode_name ); ?>" placeholder="e.g. filler_under_eye"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
-                    <p class="description">Shortcode: <code>[product_img name="<?php echo esc_attr( $shortcode_name ); ?>" alt="" class="" caption=""]</code></p>
+                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][shortcode_name]" value="<?php echo esc_attr( $shortcode_name ); ?>" placeholder="<?php if ( $is_sender ) { ?>e.g. filler_under_eye<?php } ?>"<?php if ( ! $is_sender ) { ?> class="hide-click" readonly<?php } ?>>
+                </div>
+
+                <div class="dt-field-col">
+                    <?php if ( ! empty( $shortcode_name ) || ! empty( $unique_id ) ) :
+                        $sc_by_name = ! empty( $shortcode_name ) ? '[product_img name="' . esc_attr( $shortcode_name ) . '" alt="" class="" caption=""]' : '';
+                        $sc_by_id   = ! empty( $unique_id )      ? '[product_img id="' . esc_attr( $unique_id ) . '" alt="" class="" caption=""]' : '';
+                    ?>
+                    <div class="dt-shortcode-box">
+                        <div class="dt-shortcode-box-title">
+                            <span class="dashicons dashicons-shortcode"></span>
+                            <span>Shortcode</span>
+                        </div>
+                        <?php if ( ! empty( $sc_by_name ) ) : ?>
+                        <div class="dt-shortcode-item">
+                            <span class="dt-shortcode-badge dt-shortcode-badge--name">NAME</span>
+                            <code class="dt-shortcode-code"><?php echo esc_html( $sc_by_name ); ?></code>
+                            <button type="button" class="dt-shortcode-copy" data-clipboard-text="<?php echo esc_attr( $sc_by_name ); ?>" title="Copy to clipboard">
+                                <span class="dashicons dashicons-admin-page"></span>
+                                <span class="dt-shortcode-copy-label">Copy</span>
+                            </button>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $sc_by_id ) ) : ?>
+                        <div class="dt-shortcode-item">
+                            <span class="dt-shortcode-badge dt-shortcode-badge--id">ID</span>
+                            <code class="dt-shortcode-code"><?php echo esc_html( $sc_by_id ); ?></code>
+                            <button type="button" class="dt-shortcode-copy" data-clipboard-text="<?php echo esc_attr( $sc_by_id ); ?>" title="Copy to clipboard">
+                                <span class="dashicons dashicons-admin-page"></span>
+                                <span class="dt-shortcode-copy-label">Copy</span>
+                            </button>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="dt-shortcode-footer">
+                            <span class="dt-usage-count<?php echo $usage_count > 0 ? ' is-active' : ' is-zero'; ?>" data-count="<?php echo esc_attr( $usage_count ); ?>">
+                                <span class="dashicons dashicons-admin-links"></span>
+                                <?php if ( $usage_count > 0 ) : ?>
+                                    ใช้งาน <strong class="dt-usage-count-num"><?php echo esc_html( $usage_count ); ?></strong> ลิงก์
+                                <?php else : ?>
+                                    <span class="dt-usage-count-num">ยังไม่มีการใช้งาน</span>
+                                <?php endif; ?>
+                            </span>
+                            <button type="button"
+                                class="button dt-shortcode-find-usage"
+                                data-shortcode-name="<?php echo esc_attr( $shortcode_name ); ?>"
+                                data-unique-id="<?php echo esc_attr( $unique_id ); ?>"
+                                data-item-name="<?php echo esc_attr( $name ); ?>">
+                                <span class="dashicons dashicons-search"></span>
+                                URL ที่ใช้ภาพนี้
+                            </button>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -351,29 +653,42 @@ function product_image_render_row( $index, $data ) {
 
 /**
  * 5. Shortcode Implementation
- * Usage: [product_img name="filler_01" alt="" class="" caption=""]
+ * Usage:
+ *   By name: [product_img name="filler_01" alt="" class="" caption=""]
+ *   By ID:   [product_img id="5" alt="" class="" caption=""]
  */
 function product_image_shortcode( $atts ) {
     $atts = shortcode_atts( array(
         'name' => '',
+        'id' => '',
         'class' => '',
         'alt' => '',
         'caption' => '',
     ), $atts, 'product_img' );
 
-    if ( empty( $atts['name'] ) ) {
+    if ( empty( $atts['name'] ) && empty( $atts['id'] ) ) {
         return '';
     }
 
     $data = get_option( 'product_images_data', array() );
     $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
     
-    // Find the image with the matching shortcode name
+    // Find the image - prioritize by ID, fallback to shortcode name
     $found_image = null;
-    foreach ( $items as $item ) {
-        if ( isset($item['shortcode_name']) && $item['shortcode_name'] === $atts['name'] ) {
-            $found_image = $item;
-            break;
+    if ( ! empty( $atts['id'] ) ) {
+        $lookup_id = intval( $atts['id'] );
+        foreach ( $items as $item ) {
+            if ( isset( $item['unique_id'] ) && intval( $item['unique_id'] ) === $lookup_id ) {
+                $found_image = $item;
+                break;
+            }
+        }
+    } elseif ( ! empty( $atts['name'] ) ) {
+        foreach ( $items as $item ) {
+            if ( isset($item['shortcode_name']) && $item['shortcode_name'] === $atts['name'] ) {
+                $found_image = $item;
+                break;
+            }
         }
     }
 
@@ -400,7 +715,8 @@ function product_image_shortcode( $atts ) {
     
     // Fallback if no ID (only URL)
     if ( ! empty( $found_image['image_url'] ) ) {
-        $alt = ! empty( $atts['alt'] ) ? $atts['alt'] : $atts['name'];
+        $fallback_alt = ! empty( $atts['name'] ) ? $atts['name'] : ( isset( $found_image['shortcode_name'] ) ? $found_image['shortcode_name'] : '' );
+        $alt = ! empty( $atts['alt'] ) ? $atts['alt'] : $fallback_alt;
         if ( ! empty( $atts['caption'] ) ) {
             return sprintf(
                 '<div class="wp-block-image"><figure class="aligncenter size-full"><img src="%s" alt="%s" class="%s" /><figcaption class="wp-element-caption">%s</figcaption></figure></div>',
@@ -422,3 +738,267 @@ function product_image_shortcode( $atts ) {
     return '';
 }
 add_shortcode( 'product_img', 'product_image_shortcode' );
+
+/**
+ * 6. Force Sync Handler (Sender only)
+ * Manually pushes current product_images_data to all client sites using blocking requests.
+ * This gives real-time feedback about sync success/failure per site.
+ */
+add_action( 'wp_ajax_product_image_force_sync', 'product_image_force_sync_handler' );
+function product_image_force_sync_handler() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+    }
+    check_ajax_referer( 'product_image_force_sync_action', '_nonce' );
+
+    if ( ! defined( 'VSQ_SYNC_OPTION_KEY' ) || ! defined( 'VSQ_SYNC_ENDPOINT_ROUTE' ) ) {
+        wp_send_json_error( array( 'message' => 'Sync system not available' ) );
+    }
+
+    $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+    $role = isset( $vsq_settings['role'] ) ? $vsq_settings['role'] : '';
+    if ( $role !== 'sender' ) {
+        wp_send_json_error( array( 'message' => 'This site is not configured as Sender' ) );
+    }
+
+    $client_sites = isset( $vsq_settings['client_sites'] ) ? $vsq_settings['client_sites'] : array();
+    if ( empty( $client_sites ) ) {
+        wp_send_json_error( array( 'message' => 'No client sites configured' ) );
+    }
+
+    $current_value = get_option( 'product_images_data', array() );
+    $items_count = isset( $current_value['items'] ) && is_array( $current_value['items'] ) ? count( $current_value['items'] ) : 0;
+
+    $results = array();
+    foreach ( $client_sites as $site ) {
+        if ( empty( $site['url'] ) || empty( $site['key'] ) ) {
+            continue;
+        }
+
+        $endpoint = trailingslashit( $site['url'] ) . 'wp-json/' . VSQ_SYNC_ENDPOINT_ROUTE;
+        $body = array(
+            'type'       => 'option',
+            'data'       => array(
+                'name'  => 'product_images_data',
+                'value' => $current_value,
+            ),
+            'secret_key' => $site['key'],
+        );
+
+        $response = wp_remote_post( $endpoint, array(
+            'body'      => wp_json_encode( $body ),
+            'headers'   => array( 'Content-Type' => 'application/json' ),
+            'timeout'   => 30,
+            'blocking'  => true,
+            'sslverify' => false,
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            $results[] = array(
+                'url'     => $site['url'],
+                'success' => false,
+                'message' => 'Connection Error: ' . $response->get_error_message(),
+            );
+        } else {
+            $status    = wp_remote_retrieve_response_code( $response );
+            $body_resp = wp_remote_retrieve_body( $response );
+            $results[] = array(
+                'url'     => $site['url'],
+                'success' => ( $status >= 200 && $status < 300 ),
+                'status'  => $status,
+                'message' => $body_resp,
+            );
+        }
+    }
+
+    wp_send_json_success( array(
+        'items_count' => $items_count,
+        'results'     => $results,
+    ) );
+}
+
+/**
+ * 7. Find Usages Handler
+ * ค้นหาโพสต์/เพจที่มีการเรียกใช้ shortcode [product_img name="..."] หรือ [product_img id="..."]
+ * ค้นทั้งใน post_content และ postmeta (รองรับทั้ง shortcode ปกติและแบบ escaped ใน JSON/Elementor)
+ */
+add_action( 'wp_ajax_product_image_find_usages', 'product_image_find_usages_handler' );
+function product_image_find_usages_handler() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+    }
+    check_ajax_referer( 'product_image_find_usages_action', '_nonce' );
+
+    global $wpdb;
+
+    $shortcode_name = isset( $_POST['shortcode_name'] ) ? sanitize_text_field( wp_unslash( $_POST['shortcode_name'] ) ) : '';
+    $unique_id      = isset( $_POST['unique_id'] ) ? intval( $_POST['unique_id'] ) : 0;
+
+    if ( empty( $shortcode_name ) && empty( $unique_id ) ) {
+        wp_send_json_error( array( 'message' => 'Missing identifier' ) );
+    }
+
+    // สร้าง LIKE patterns - ค้นทั้งรูปแบบปกติและรูปแบบ JSON-escaped (\")
+    // ใน MySQL ต้อง escape backslash เป็น \\ ใน PHP string ก็ต้องใช้ \\\\
+    $patterns = array();
+
+    if ( ! empty( $shortcode_name ) ) {
+        $name_esc = $wpdb->esc_like( $shortcode_name );
+        // รูปแบบปกติ: [product_img ... name="xxx"
+        $patterns[] = '%[product_img%name="' . $name_esc . '"%';
+        // รูปแบบ JSON escaped (ใน Elementor/page builder): [product_img ... name=\"xxx\"
+        $patterns[] = '%[product_img%name=\\\\"' . $name_esc . '\\\\"%';
+    }
+
+    if ( ! empty( $unique_id ) ) {
+        $id_esc = $wpdb->esc_like( (string) $unique_id );
+        $patterns[] = '%[product_img%id="' . $id_esc . '"%';
+        $patterns[] = '%[product_img%id=\\\\"' . $id_esc . '\\\\"%';
+    }
+
+    if ( empty( $patterns ) ) {
+        wp_send_json_success( array( 'results' => array() ) );
+    }
+
+    $statuses       = array( 'publish', 'private', 'draft', 'pending', 'future' );
+    $status_place   = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
+    $like_place     = implode( ' OR ', array_fill( 0, count( $patterns ), 'post_content LIKE %s' ) );
+
+    // Query 1: ค้นใน post_content
+    $sql_posts = "SELECT DISTINCT ID, post_title, post_type, post_status
+                  FROM {$wpdb->posts}
+                  WHERE post_status IN ($status_place)
+                    AND post_type NOT IN ('revision', 'attachment', 'nav_menu_item')
+                    AND ( $like_place )";
+
+    $args_posts = array_merge( $statuses, $patterns );
+    $rows_posts = $wpdb->get_results( $wpdb->prepare( $sql_posts, $args_posts ) );
+
+    // Query 2: ค้นใน postmeta (สำหรับ page builder เช่น Elementor)
+    $meta_like_place = implode( ' OR ', array_fill( 0, count( $patterns ), 'pm.meta_value LIKE %s' ) );
+    $sql_meta = "SELECT DISTINCT p.ID, p.post_title, p.post_type, p.post_status
+                 FROM {$wpdb->posts} p
+                 INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+                 WHERE p.post_status IN ($status_place)
+                   AND p.post_type NOT IN ('revision', 'attachment', 'nav_menu_item')
+                   AND ( $meta_like_place )";
+
+    $args_meta = array_merge( $statuses, $patterns );
+    $rows_meta = $wpdb->get_results( $wpdb->prepare( $sql_meta, $args_meta ) );
+
+    // Query 3: ค้นใน options (widget/theme options) - เช่น customizer, widgets
+    $sql_opts = "SELECT option_id, option_name
+                 FROM {$wpdb->options}
+                 WHERE " . implode( ' OR ', array_fill( 0, count( $patterns ), 'option_value LIKE %s' ) );
+    $rows_opts = $wpdb->get_results( $wpdb->prepare( $sql_opts, $patterns ) );
+
+    // รวมผลลัพธ์ไม่ซ้ำ
+    $results = array();
+    $seen    = array();
+
+    foreach ( array_merge( $rows_posts, $rows_meta ) as $row ) {
+        if ( isset( $seen[ $row->ID ] ) ) {
+            continue;
+        }
+        $seen[ $row->ID ] = true;
+
+        $view_url = get_permalink( $row->ID );
+        $edit_url = get_edit_post_link( $row->ID, 'raw' );
+        $pt_obj   = get_post_type_object( $row->post_type );
+
+        $results[] = array(
+            'id'          => (int) $row->ID,
+            'title'       => $row->post_title ? $row->post_title : '(ไม่มีชื่อ)',
+            'post_type'   => $row->post_type,
+            'type_label'  => $pt_obj ? $pt_obj->labels->singular_name : $row->post_type,
+            'status'      => $row->post_status,
+            'view_url'    => $view_url ? $view_url : '',
+            'edit_url'    => $edit_url ? $edit_url : '',
+        );
+    }
+
+    // เรียงตาม post_type แล้วตาม title
+    usort( $results, function ( $a, $b ) {
+        if ( $a['post_type'] === $b['post_type'] ) {
+            return strcasecmp( $a['title'], $b['title'] );
+        }
+        return strcmp( $a['post_type'], $b['post_type'] );
+    } );
+
+    // แปลง options เป็น entry (ไม่มี edit link แต่แสดงชื่อ option)
+    $option_results = array();
+    foreach ( $rows_opts as $opt ) {
+        $option_results[] = array(
+            'option_name' => $opt->option_name,
+        );
+    }
+
+    wp_send_json_success( array(
+        'results' => $results,
+        'options' => $option_results,
+        'total'   => count( $results ),
+    ) );
+}
+
+/**
+ * 8. Auto Blocking Sync หลังกด Update (Sender only)
+ * ---------------------------------------------------------------
+ * เหตุผล:
+ *   - ระบบ sync เดิมใช้ `pre_update_option` + async HTTP (blocking=false, timeout 5s)
+ *     ซึ่งอาจ fail เงียบ ๆ หาก server ช้า ทำให้ client ได้ข้อมูลไม่ครบ (ID ไม่ตรง)
+ *   - Hook `updated_option` ทำงานหลัง DB บันทึกสำเร็จ → $new_value มี unique_id ที่ถูก
+ *     assign ครบถ้วนแล้วจาก sanitize_option (product_image_validate_data)
+ *   - ยิง blocking HTTP ซ้ำอีกรอบ รับประกันว่า client ได้รับแน่นอน
+ *
+ * หมายเหตุ:
+ *   - ฟังก์ชันนี้ทำงานแยกต่างหากจากปุ่ม Force Sync Now (product_image_force_sync_handler)
+ *     ไม่มีการเรียกข้ามกันและกัน เพื่อไม่กระทบ behavior เดิม
+ *   - logic การยิง HTTP copy รูปแบบเดียวกับ Force Sync เพื่อความสอดคล้อง
+ */
+add_action( 'updated_option', 'product_image_auto_sync_after_save', 20, 3 );
+function product_image_auto_sync_after_save( $option, $old_value, $new_value ) {
+    if ( $option !== 'product_images_data' ) {
+        return;
+    }
+
+    if ( ! defined( 'VSQ_SYNC_OPTION_KEY' ) || ! defined( 'VSQ_SYNC_ENDPOINT_ROUTE' ) ) {
+        return;
+    }
+
+    $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
+    $role = isset( $vsq_settings['role'] ) ? $vsq_settings['role'] : '';
+
+    // ทำงานเฉพาะ sender เท่านั้น (receiver ต้องไม่ broadcast กลับ)
+    if ( $role !== 'sender' ) {
+        return;
+    }
+
+    $client_sites = isset( $vsq_settings['client_sites'] ) ? $vsq_settings['client_sites'] : array();
+    if ( empty( $client_sites ) ) {
+        return;
+    }
+
+    foreach ( $client_sites as $site ) {
+        if ( empty( $site['url'] ) || empty( $site['key'] ) ) {
+            continue;
+        }
+
+        $endpoint = trailingslashit( $site['url'] ) . 'wp-json/' . VSQ_SYNC_ENDPOINT_ROUTE;
+        $body = array(
+            'type'       => 'option',
+            'data'       => array(
+                'name'  => 'product_images_data',
+                'value' => $new_value,
+            ),
+            'secret_key' => $site['key'],
+        );
+
+        wp_remote_post( $endpoint, array(
+            'body'      => wp_json_encode( $body ),
+            'headers'   => array( 'Content-Type' => 'application/json' ),
+            'timeout'   => 30,
+            'blocking'  => true,
+            'sslverify' => false,
+        ) );
+    }
+}

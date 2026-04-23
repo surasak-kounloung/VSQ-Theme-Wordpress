@@ -265,36 +265,44 @@ function al_shortcode_render($atts)
 
     ob_start();
 ?>
-    <div class="award-list-wrap">
-        <?php foreach ($items as $item) :
-            $image_url = isset($item['image_url']) ? $item['image_url'] : '';
-            $image_id = isset($item['image_id']) ? $item['image_id'] : '';
-            $year = isset($item['year']) ? $item['year'] : '';
-            $period = isset($item['period']) ? $item['period'] : '';
+    <section class="section-slide-banner">
+        <div class="slide-banner-list">
+            <?php foreach ($items as $item) :
+                $image_url = isset($item['image_url']) ? $item['image_url'] : '';
+                $image_id = isset($item['image_id']) ? $item['image_id'] : '';
+                $year = isset($item['year']) ? $item['year'] : '';
+                $period = isset($item['period']) ? $item['period'] : '';
 
-            if (empty($image_url) && empty($year) && empty($period)) continue;
-        ?>
-            <div class="award-item">
-                <?php if ($image_url) : ?>
-                    <div class="award-image">
-                        <?php if ($image_id) {
-                            echo wp_get_attachment_image($image_id, 'full');
-                        } else { ?>
-                            <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($year); ?>">
-                        <?php } ?>
+                if (empty($image_id) && empty($image_url)) continue;
+            ?>
+                <div class="slide-banner-item">
+                    <?php if ($image_id) : ?>
+                    <div class="slide-banner-image">
+                        <?php echo wp_get_attachment_image($image_id, 'full', false, array('class' => '')); ?>
                     </div>
-                <?php endif; ?>
-                
-                <?php if ($year) : ?>
-                    <div class="award-text"><?php echo esc_html($year); ?></div>
-                <?php endif; ?>
-                <?php if ($period) : ?>
-                    <div class="award-text"><?php echo esc_html($period); ?></div>
-                <?php endif; ?>
-            </div>
-        <?php endforeach; ?>
-    </div>
+                    <?php else : ?>
+                    <div class="slide-banner-image">
+                        <img src="<?php echo esc_url($image_url); ?>" alt="Award Image">
+                    </div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
 <?php
     return ob_get_clean();
 }
 add_shortcode('award_list', 'al_shortcode_render');
+
+// Enqueue Frontend Assets for Shortcode
+function al_frontend_assets()
+{
+    global $post;
+    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'award_list')) {
+        wp_enqueue_style('flickity-style', 'https://unpkg.com/flickity@2/dist/flickity.min.css', array(), '1.0');
+        wp_enqueue_style('slide-banner-style', get_stylesheet_directory_uri() . '/assets/css/slide-banner.css', array(), filemtime( get_stylesheet_directory() . '/assets/css/slide-banner.css' ));
+        wp_enqueue_script('flickity-script', 'https://unpkg.com/flickity@2/dist/flickity.pkgd.min.js', array(), '1.0', true);
+        wp_enqueue_script('slide-banner-script', get_stylesheet_directory_uri() . '/assets/js/slide-banner.js', array(), filemtime( get_stylesheet_directory() . '/assets/js/slide-banner.js' ), true);
+    }
+}
+add_action('wp_enqueue_scripts', 'al_frontend_assets', 99);

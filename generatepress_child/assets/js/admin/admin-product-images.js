@@ -42,6 +42,234 @@ jQuery(document).ready(function($) {
         renderPagination();
     });
 
+    // Copy Shortcode to Clipboard
+    $(document).on('click', '.dt-shortcode-copy', function(e) {
+        e.preventDefault();
+        var btn = $(this);
+        var text = btn.attr('data-clipboard-text') || '';
+        if ( ! text ) return;
+
+        var done = function() {
+            var label = btn.find('.dt-shortcode-copy-label');
+            var originalLabel = label.text();
+            btn.addClass('is-copied');
+            label.text('Copied!');
+            setTimeout(function() {
+                btn.removeClass('is-copied');
+                label.text(originalLabel || 'Copy');
+            }, 1500);
+        };
+
+        if ( navigator.clipboard && window.isSecureContext ) {
+            navigator.clipboard.writeText(text).then(done).catch(function() {
+                fallbackCopy(text, done);
+            });
+        } else {
+            fallbackCopy(text, done);
+        }
+    });
+
+    function fallbackCopy(text, cb) {
+        var $tmp = $('<textarea>').val(text).css({position:'fixed', top:0, left:0, opacity:0}).appendTo('body');
+        $tmp[0].select();
+        try { document.execCommand('copy'); } catch (err) {}
+        $tmp.remove();
+        if (typeof cb === 'function') cb();
+    }
+
+    // ============================================
+    // Find Usage Modal
+    // ============================================
+    var $modal = $('#dt-find-usage-modal');
+
+    function openModal() {
+        $modal.addClass('is-open').attr('aria-hidden', 'false');
+        $('body').addClass('dt-modal-open');
+    }
+
+    function closeModal() {
+        $modal.removeClass('is-open').attr('aria-hidden', 'true');
+        $('body').removeClass('dt-modal-open');
+    }
+
+    function setModalState(state) {
+        $modal.find('.dt-modal-state').attr('hidden', true);
+        $modal.find('.dt-modal-state--' + state).removeAttr('hidden');
+    }
+
+    // Open modal on button click
+    $(document).on('click', '.dt-shortcode-find-usage', function(e) {
+        e.preventDefault();
+        var btn = $(this);
+        var shortcodeName = btn.data('shortcodeName') || '';
+        var uniqueId = btn.data('uniqueId') || '';
+        var itemName = btn.data('itemName') || '';
+        var $footer = btn.closest('.dt-shortcode-footer');
+
+        if (!shortcodeName && !uniqueId) {
+            return;
+        }
+
+        // Show item info in modal header
+        var infoHtml = '<div class="dt-modal-tags">';
+        if (itemName) {
+            infoHtml += '<span class="dt-modal-tag dt-modal-tag--label">' + $('<div>').text(itemName).html() + '</span>';
+        }
+        if (shortcodeName) {
+            infoHtml += '<span class="dt-modal-tag dt-modal-tag--name">name: ' + $('<div>').text(shortcodeName).html() + '</span>';
+        }
+        if (uniqueId) {
+            infoHtml += '<span class="dt-modal-tag dt-modal-tag--id">id: ' + $('<div>').text(uniqueId).html() + '</span>';
+        }
+        infoHtml += '</div>';
+        $modal.find('.dt-modal-item-info').html(infoHtml);
+
+        openModal();
+        setModalState('loading');
+
+        // AJAX request
+        $.post(productImageAdmin.ajaxUrl, {
+            action: 'product_image_find_usages',
+            _nonce: productImageAdmin.findUsagesNonce,
+            shortcode_name: shortcodeName,
+            unique_id: uniqueId
+        }).done(function(response) {
+            if (!response || !response.success) {
+                setModalState('error');
+                return;
+            }
+            renderUsageResults(response.data);
+
+            // Sync actual count back to badge
+            var total = (response.data.results ? response.data.results.length : 0)
+                      + (response.data.options ? response.data.options.length : 0);
+            updateUsageBadge($footer, total);
+        }).fail(function() {
+            setModalState('error');
+        });
+    });
+
+    function updateUsageBadge($footer, total) {
+        if (!$footer || !$footer.length) return;
+        var $badge = $footer.find('.dt-usage-count');
+        if (!$badge.length) return;
+
+        $badge.attr('data-count', total);
+        var $num = $badge.find('.dt-usage-count-num');
+
+        if (total > 0) {
+            $badge.removeClass('is-zero').addClass('is-active');
+            if ($num.length && $num.is('strong')) {
+                $num.text(total);
+            } else {
+                $badge.html('<span class="dashicons dashicons-admin-links"></span> ใช้งาน <strong class="dt-usage-count-num">' + total + '</strong> ที่');
+            }
+        } else {
+            $badge.removeClass('is-active').addClass('is-zero');
+            $badge.html('<span class="dashicons dashicons-admin-links"></span> <span class="dt-usage-count-num">ยังไม่มีการใช้งาน</span>');
+        }
+    }
+
+    function renderUsageResults(data) {
+        var results = data.results || [];
+        var options = data.options || [];
+        var total = results.length + options.length;
+
+        if (total === 0) {
+            setModalState('empty');
+            return;
+        }
+
+        // Summary
+        var summaryHtml = 'พบการใช้งานทั้งหมด <strong>' + total + '</strong> รายการ';
+        $modal.find('.dt-modal-summary').html(summaryHtml);
+
+        // Group by post_type
+        var grouped = {};
+        results.forEach(function(r) {
+            var pt = r.post_type || 'other';
+            if (!grouped[pt]) grouped[pt] = { label: r.type_label || pt, items: [] };
+            grouped[pt].items.push(r);
+        });
+
+        var listHtml = '';
+        Object.keys(grouped).forEach(function(pt) {
+            var g = grouped[pt];
+            listHtml += '<li class="dt-usage-group">';
+            listHtml += '<div class="dt-usage-group-title">' + escapeHtml(g.label) + ' <span class="dt-usage-count">(' + g.items.length + ')</span></div>';
+            listHtml += '<ul class="dt-usage-sublist">';
+            g.items.forEach(function(item) {
+                listHtml += renderUsageItem(item);
+            });
+            listHtml += '</ul>';
+            listHtml += '</li>';
+        });
+
+        // Options section
+        if (options.length > 0) {
+            listHtml += '<li class="dt-usage-group">';
+            listHtml += '<div class="dt-usage-group-title">Widgets / Theme Options <span class="dt-usage-count">(' + options.length + ')</span></div>';
+            listHtml += '<ul class="dt-usage-sublist">';
+            options.forEach(function(opt) {
+                listHtml += '<li class="dt-usage-item dt-usage-item--option">';
+                listHtml += '<div class="dt-usage-item-main">';
+                listHtml += '<span class="dashicons dashicons-admin-generic"></span>';
+                listHtml += '<span class="dt-usage-title">' + escapeHtml(opt.option_name) + '</span>';
+                listHtml += '</div>';
+                listHtml += '</li>';
+            });
+            listHtml += '</ul>';
+            listHtml += '</li>';
+        }
+
+        $modal.find('.dt-usage-list').html(listHtml);
+        setModalState('results');
+    }
+
+    function renderUsageItem(item) {
+        var statusBadge = '';
+        if (item.status && item.status !== 'publish') {
+            statusBadge = '<span class="dt-usage-status dt-usage-status--' + item.status + '">' + item.status + '</span>';
+        }
+
+        var html = '<li class="dt-usage-item">';
+        html += '<div class="dt-usage-item-main">';
+        html += '<span class="dashicons dashicons-admin-page"></span>';
+        html += '<span class="dt-usage-title">' + escapeHtml(item.title) + '</span>';
+        html += statusBadge;
+        html += '</div>';
+        html += '<div class="dt-usage-item-actions">';
+        if (item.view_url) {
+            html += '<a href="' + escapeAttr(item.view_url) + '" target="_blank" rel="noopener" class="button button-small button-view"><span class="dashicons dashicons-visibility"></span> ดูหน้า</a>';
+        }
+        if (item.edit_url) {
+            html += '<a href="' + escapeAttr(item.edit_url) + '" target="_blank" rel="noopener" class="button button-small button-edit"><span class="dashicons dashicons-edit"></span> แก้ไข</a>';
+        }
+        html += '</div>';
+        html += '</li>';
+        return html;
+    }
+
+    function escapeHtml(str) {
+        return $('<div>').text(String(str == null ? '' : str)).html();
+    }
+
+    function escapeAttr(str) {
+        return String(str == null ? '' : str).replace(/"/g, '&quot;');
+    }
+
+    // Close modal handlers
+    $(document).on('click', '[data-modal-close]', function(e) {
+        e.preventDefault();
+        closeModal();
+    });
+
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape' && $modal.hasClass('is-open')) {
+            closeModal();
+        }
+    });
+
     // Remove Row
     $(document).on('click', '.dt-remove-row', function(e) {
         e.preventDefault();
@@ -159,7 +387,7 @@ jQuery(document).ready(function($) {
         if (currentPage > totalPages) currentPage = totalPages || 1;
 
         // Update UI Text
-        $('#total-items').text(totalItems);
+        $('.total-items').text(totalItems);
         $('.current-page').text(currentPage);
         $('.total-pages').text(totalPages);
 
@@ -256,6 +484,66 @@ jQuery(document).ready(function($) {
     $('.handlediv').on('click', function() {
         $(this).closest('.postbox').toggleClass('closed');
     });
+
+    // --- Force Sync Now ---
+    $('#product-image-force-sync').on('click', function(e) {
+        e.preventDefault();
+        var btn = $(this);
+        var nonce = btn.data('nonce');
+        var spinner = $('#product-image-force-sync-spinner');
+        var resultBox = $('#product-image-force-sync-result');
+
+        if (!confirm('Force-push current saved data (with IDs) to ALL client sites now?\n\nMake sure you clicked Update first so the data is saved.')) {
+            return;
+        }
+
+        btn.prop('disabled', true);
+        spinner.addClass('is-active').css('visibility', 'visible');
+        resultBox.hide().empty();
+
+        $.post(ajaxurl, {
+            action: 'product_image_force_sync',
+            _nonce: nonce
+        }).done(function(response) {
+            var html = '';
+            if (response && response.success) {
+                var data = response.data || {};
+                html += '<div class="notice notice-info inline" style="margin: 0 0 8px; padding: 6px 10px;">';
+                html += '<p style="margin: 0;">Pushed <b>' + (data.items_count || 0) + '</b> items to ' + (data.results || []).length + ' site(s):</p>';
+                html += '</div>';
+                (data.results || []).forEach(function(r) {
+                    var cls = r.success ? 'notice-success' : 'notice-error';
+                    var icon = r.success ? '&#10003;' : '&#10007;';
+                    html += '<div class="notice ' + cls + ' inline" style="margin: 0 0 6px; padding: 6px 10px;">';
+                    html += '<p style="margin: 0;"><b>' + icon + ' ' + escapeHtml(r.url) + '</b>';
+                    if (r.status) html += ' <small>(HTTP ' + r.status + ')</small>';
+                    html += '</p>';
+                    if (r.message) {
+                        html += '<p style="margin: 4px 0 0; font-size: 11px; color: #646970; word-break: break-all;">' + escapeHtml(String(r.message).substring(0, 300)) + '</p>';
+                    }
+                    html += '</div>';
+                });
+            } else {
+                var errMsg = (response && response.data && response.data.message) ? response.data.message : 'Unknown error';
+                html = '<div class="notice notice-error inline" style="margin: 0; padding: 6px 10px;"><p style="margin: 0;">Error: ' + escapeHtml(errMsg) + '</p></div>';
+            }
+            resultBox.html(html).show();
+        }).fail(function(xhr) {
+            resultBox.html('<div class="notice notice-error inline" style="margin: 0; padding: 6px 10px;"><p style="margin: 0;">Request Failed: HTTP ' + xhr.status + '</p></div>').show();
+        }).always(function() {
+            btn.prop('disabled', false);
+            spinner.removeClass('is-active').css('visibility', 'hidden');
+        });
+    });
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
     // --- Validation: Check duplicate shortcode names ---
     // $('#submit').on('click', function(e) {

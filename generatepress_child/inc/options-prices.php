@@ -37,7 +37,7 @@ function course_prices_get_schema_fields() {
         'session',
         'normal_price',
         'unit_price',
-        'name',
+        'unit_name',
         'treatment_group_name',
         'product_master_name',
         'treatment_by',
