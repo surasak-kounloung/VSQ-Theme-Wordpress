@@ -277,6 +277,11 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender' ) {
             // Merge single keys
             $all_single_keys = array_merge($doctor_single_keys, $branch_single_keys, $case_review_single_keys);
 
+            // Keys that end with "_id" but are NOT image attachment IDs (business IDs).
+            // These must NOT be treated as image keys, otherwise they will be overwritten
+            // with a local attachment ID on the receiver site.
+            $non_image_id_keys = array( 'item_id' );
+
             foreach ( $data as $key => $value ) {
                 // Copy original value
                 $new_data[$key] = $value;
@@ -374,7 +379,12 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender' ) {
                 } else {
                     // Scalar Value
                     $is_image_key = ( substr( $key, -3 ) === '_id' || $key === 'image_id' || in_array( $key, $all_single_keys ) );
-                    
+
+                    // Skip business IDs that happen to end with "_id" (e.g. item_id)
+                    if ( in_array( $key, $non_image_id_keys, true ) ) {
+                        $is_image_key = false;
+                    }
+
                     if ( $is_image_key && is_numeric( $value ) && $value > 0 ) {
                         $url = wp_get_attachment_url( $value );
                         if ( $url ) {
@@ -1026,11 +1036,26 @@ if ( isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'receiver' ) {
             }
             unset($value); // break reference
 
+            // Business ID keys that must NEVER be replaced with a local attachment ID.
+            // Their values from the master site must be preserved as-is.
+            $non_image_id_keys = array( 'item_id' );
+
             // 2. Process Current Level for _source_url keys
             // Collect keys to process to avoid modifying array while iterating
             $source_keys = array();
             foreach ( $data as $key => $val ) {
                 if ( !is_array($val) && substr( $key, -11 ) === '_source_url' ) {
+                    // Skip source_url that belongs to a business ID key (e.g. item_id_source_url)
+                    $base_key = substr( $key, 0, -11 );
+                    if ( in_array( $base_key, $non_image_id_keys, true ) ) {
+                        // Drop the helper keys without touching the business ID value
+                        unset( $data[ $key ] );
+                        $meta_key = $base_key . '_image_meta';
+                        if ( isset( $data[ $meta_key ] ) ) {
+                            unset( $data[ $meta_key ] );
+                        }
+                        continue;
+                    }
                     $source_keys[] = $key;
                 }
             }

@@ -102,11 +102,11 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         var btn = $(this);
         var shortcodeName = btn.data('shortcodeName') || '';
-        var uniqueId = btn.data('uniqueId') || '';
+        var itemId = btn.data('itemId') || '';
         var itemName = btn.data('itemName') || '';
         var $footer = btn.closest('.dt-shortcode-footer');
 
-        if (!shortcodeName && !uniqueId) {
+        if (!shortcodeName && !itemId) {
             return;
         }
 
@@ -118,8 +118,8 @@ jQuery(document).ready(function($) {
         if (shortcodeName) {
             infoHtml += '<span class="dt-modal-tag dt-modal-tag--name">name: ' + $('<div>').text(shortcodeName).html() + '</span>';
         }
-        if (uniqueId) {
-            infoHtml += '<span class="dt-modal-tag dt-modal-tag--id">id: ' + $('<div>').text(uniqueId).html() + '</span>';
+        if (itemId) {
+            infoHtml += '<span class="dt-modal-tag dt-modal-tag--id">id: ' + $('<div>').text(itemId).html() + '</span>';
         }
         infoHtml += '</div>';
         $modal.find('.dt-modal-item-info').html(infoHtml);
@@ -132,7 +132,7 @@ jQuery(document).ready(function($) {
             action: 'product_image_find_usages',
             _nonce: productImageAdmin.findUsagesNonce,
             shortcode_name: shortcodeName,
-            unique_id: uniqueId
+            item_id: itemId
         }).done(function(response) {
             if (!response || !response.success) {
                 setModalState('error');
@@ -484,66 +484,6 @@ jQuery(document).ready(function($) {
     $('.handlediv').on('click', function() {
         $(this).closest('.postbox').toggleClass('closed');
     });
-
-    // --- Force Sync Now ---
-    $('#product-image-force-sync').on('click', function(e) {
-        e.preventDefault();
-        var btn = $(this);
-        var nonce = btn.data('nonce');
-        var spinner = $('#product-image-force-sync-spinner');
-        var resultBox = $('#product-image-force-sync-result');
-
-        if (!confirm('Force-push current saved data (with IDs) to ALL client sites now?\n\nMake sure you clicked Update first so the data is saved.')) {
-            return;
-        }
-
-        btn.prop('disabled', true);
-        spinner.addClass('is-active').css('visibility', 'visible');
-        resultBox.hide().empty();
-
-        $.post(ajaxurl, {
-            action: 'product_image_force_sync',
-            _nonce: nonce
-        }).done(function(response) {
-            var html = '';
-            if (response && response.success) {
-                var data = response.data || {};
-                html += '<div class="notice notice-info inline" style="margin: 0 0 8px; padding: 6px 10px;">';
-                html += '<p style="margin: 0;">Pushed <b>' + (data.items_count || 0) + '</b> items to ' + (data.results || []).length + ' site(s):</p>';
-                html += '</div>';
-                (data.results || []).forEach(function(r) {
-                    var cls = r.success ? 'notice-success' : 'notice-error';
-                    var icon = r.success ? '&#10003;' : '&#10007;';
-                    html += '<div class="notice ' + cls + ' inline" style="margin: 0 0 6px; padding: 6px 10px;">';
-                    html += '<p style="margin: 0;"><b>' + icon + ' ' + escapeHtml(r.url) + '</b>';
-                    if (r.status) html += ' <small>(HTTP ' + r.status + ')</small>';
-                    html += '</p>';
-                    if (r.message) {
-                        html += '<p style="margin: 4px 0 0; font-size: 11px; color: #646970; word-break: break-all;">' + escapeHtml(String(r.message).substring(0, 300)) + '</p>';
-                    }
-                    html += '</div>';
-                });
-            } else {
-                var errMsg = (response && response.data && response.data.message) ? response.data.message : 'Unknown error';
-                html = '<div class="notice notice-error inline" style="margin: 0; padding: 6px 10px;"><p style="margin: 0;">Error: ' + escapeHtml(errMsg) + '</p></div>';
-            }
-            resultBox.html(html).show();
-        }).fail(function(xhr) {
-            resultBox.html('<div class="notice notice-error inline" style="margin: 0; padding: 6px 10px;"><p style="margin: 0;">Request Failed: HTTP ' + xhr.status + '</p></div>').show();
-        }).always(function() {
-            btn.prop('disabled', false);
-            spinner.removeClass('is-active').css('visibility', 'hidden');
-        });
-    });
-
-    function escapeHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
 
     // --- Validation: Check duplicate shortcode names ---
     // $('#submit').on('click', function(e) {

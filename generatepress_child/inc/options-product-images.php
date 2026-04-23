@@ -88,45 +88,50 @@ function product_image_validate_data( $input ) {
         return get_option( 'product_images_data' );
     }
 
-    // Check role: only sender site should generate IDs (receiver must trust sender's IDs)
-    $is_sender = false;
-    if ( defined( 'VSQ_SYNC_OPTION_KEY' ) ) {
-        $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
-        $is_sender = isset( $vsq_settings['role'] ) && $vsq_settings['role'] === 'sender';
-    }
-
-    if ( ! $is_sender ) {
-        // On receiver (or standalone): keep incoming data as-is so IDs stay in sync with sender
-        return $input;
-    }
-
-    // Assign unique_id for new items (never reuse old IDs)
-    $old_data = get_option( 'product_images_data', array() );
-    $next_id = isset( $old_data['next_id'] ) ? intval( $old_data['next_id'] ) : 1;
-
-    // Find the highest existing unique_id to ensure counter never goes backward
+    // Auto-generate sequential item_id for new items (empty item_id)
     if ( ! empty( $items ) ) {
+        // Collect existing item_ids and find the max
+        $existing_ids = array();
+        $max_id = 0;
         foreach ( $items as $item ) {
-            if ( isset( $item['unique_id'] ) && intval( $item['unique_id'] ) >= $next_id ) {
-                $next_id = intval( $item['unique_id'] ) + 1;
+            if ( ! empty( $item['item_id'] ) ) {
+                $id = intval( $item['item_id'] );
+                $existing_ids[ $id ] = true;
+                if ( $id > $max_id ) {
+                    $max_id = $id;
+                }
             }
         }
-    }
 
-    // Assign IDs to items that don't have one yet
-    if ( ! empty( $items ) ) {
-        foreach ( $items as $index => $item ) {
-            if ( empty( $item['unique_id'] ) ) {
-                $items[ $index ]['unique_id'] = $next_id;
-                $next_id++;
-            } else {
-                $items[ $index ]['unique_id'] = intval( $item['unique_id'] );
+        // Also consider max_id from previously saved data (safety net)
+        $previous = get_option( 'product_images_data', array() );
+        if ( ! empty( $previous['items'] ) && is_array( $previous['items'] ) ) {
+            foreach ( $previous['items'] as $prev_item ) {
+                if ( ! empty( $prev_item['item_id'] ) ) {
+                    $prev_id = intval( $prev_item['item_id'] );
+                    if ( $prev_id > $max_id ) {
+                        $max_id = $prev_id;
+                    }
+                }
             }
         }
+
+        // Assign next sequential id to items missing an item_id
+        $next_id = $max_id + 1;
+        foreach ( $items as $index => $item ) {
+            if ( empty( $item['item_id'] ) ) {
+                // Skip any id that's already taken (extra safety)
+                while ( isset( $existing_ids[ $next_id ] ) ) {
+                    $next_id++;
+                }
+                $items[ $index ]['item_id'] = (string) $next_id;
+                $existing_ids[ $next_id ] = true;
+                $next_id++;
+            }
+        }
+
         $input['items'] = $items;
     }
-
-    $input['next_id'] = $next_id;
 
     return $input;
 }
@@ -188,15 +193,15 @@ function product_image_get_usage_counts( $items ) {
 
     global $wpdb;
 
-    // สร้าง lookup map: shortcode_name/unique_id → item_index
+    // สร้าง lookup map: shortcode_name/item_id → item_index
     $name_to_idx = array();
     $id_to_idx   = array();
     foreach ( $items as $idx => $item ) {
         if ( ! empty( $item['shortcode_name'] ) ) {
             $name_to_idx[ $item['shortcode_name'] ] = $idx;
         }
-        if ( ! empty( $item['unique_id'] ) ) {
-            $id_to_idx[ intval( $item['unique_id'] ) ] = $idx;
+        if ( ! empty( $item['item_id'] ) ) {
+            $id_to_idx[ intval( $item['item_id'] ) ] = $idx;
         }
     }
 
@@ -346,24 +351,6 @@ function product_image_options_page_html() {
                                         </div>
                                         <div class="clear"></div>
                                     </div>
-                                    <?php
-                                    if ( $is_sender ) :
-                                        $force_sync_nonce = wp_create_nonce( 'product_image_force_sync_action' );
-                                    ?>
-                                    <div style="padding: 10px 12px 15px; border-top: 1px solid #dcdcde;">
-                                        <p style="margin: 0 0 8px; font-size: 12px; color: #646970;">
-                                            Force-push current data (including IDs) to all client sites. Use this if auto-sync did not update the receivers.
-                                        </p>
-                                        <div style="display: flex; justify-content: flex-start; align-items: center;">
-                                            <button type="button" class="button button-secondary" id="product-image-force-sync" data-nonce="<?php echo esc_attr( $force_sync_nonce ); ?>">
-                                                <span class="dashicons dashicons-update" style="vertical-align: middle; margin-right: 5px;"></span>
-                                                Force Sync Now
-                                            </button>
-                                            <span class="spinner" id="product-image-force-sync-spinner" style="float: none; margin-top: 0; margin-left: 10px;"></span>
-                                        </div>
-                                        <div id="product-image-force-sync-result" style="margin-top: 10px; display: none;"></div>
-                                    </div>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -514,11 +501,11 @@ function product_image_render_row( $index, $data, $usage_count = 0 ) {
     if ( ! is_array( $category ) ) {
         $category = array_filter( array( $category ) );
     }
+    $item_id = isset( $data['item_id'] ) ? $data['item_id'] : '';
     $name = isset( $data['name'] ) ? $data['name'] : '';
     $shortcode_name = isset( $data['shortcode_name'] ) ? $data['shortcode_name'] : '';
     $image_url = isset( $data['image_url'] ) ? $data['image_url'] : '';
     $image_id = isset( $data['image_id'] ) ? $data['image_id'] : '';
-    $unique_id = isset( $data['unique_id'] ) ? $data['unique_id'] : '';
     
     $categories = product_image_get_categories();
 
@@ -530,9 +517,9 @@ function product_image_render_row( $index, $data, $usage_count = 0 ) {
     } 
     
     ?>
-    <div class="dt-repeater-row" data-category="<?php echo esc_attr( implode( ',', $category ) ); ?>" data-unique-id="<?php echo esc_attr( $unique_id ); ?>">
+    <div class="dt-repeater-row" data-category="<?php echo esc_attr( implode( ',', $category ) ); ?>">
         <div class="dt-row-header">
-            <span class="dt-row-title">Image Item<?php echo ! empty( $unique_id ) ? ' #' . esc_html( $unique_id ) : ' (new)'; ?></span>
+            <span class="dt-row-title">Image Item</span>
             <div class="dt-row-actions">
                  <span class="dt-toggle-row dashicons dashicons-minus"></span>
                  <?php if ( $is_sender ) { ?>
@@ -551,7 +538,6 @@ function product_image_render_row( $index, $data, $usage_count = 0 ) {
                     <div style="margin-top: 10px; margin-bottom: 5px;">
                         <input type="hidden" class="image-url-field" name="product_images_data[items][<?php echo $index; ?>][image_url]" value="<?php echo esc_attr($image_url); ?>">
                         <input type="hidden" class="image-id-field" name="product_images_data[items][<?php echo $index; ?>][image_id]" value="<?php echo esc_attr($image_id); ?>">
-                        <input type="hidden" class="unique-id-field" name="product_images_data[items][<?php echo $index; ?>][unique_id]" value="<?php echo esc_attr($unique_id); ?>">
                         <?php if ( $is_sender ) { ?>
                         <button type="button" class="button upload-image-button">Select Image</button>
                         <button type="button" class="button remove-image-button" style="color: #a00;">Remove</button>
@@ -562,7 +548,7 @@ function product_image_render_row( $index, $data, $usage_count = 0 ) {
                 <!-- ID -->
                 <div class="dt-field-col">
                     <label>ID</label>
-                    <input type="text" value="<?php echo esc_attr( $unique_id ); ?>" placeholder="Auto-generated on save" class="hide-click" readonly>
+                    <input type="text" name="product_images_data[items][<?php echo $index; ?>][item_id]" value="<?php echo esc_attr( $item_id ); ?>" placeholder="Auto-generated on save" class="hide-click" readonly>
                 </div>
 
                 <!-- Name -->
@@ -594,9 +580,9 @@ function product_image_render_row( $index, $data, $usage_count = 0 ) {
                 </div>
 
                 <div class="dt-field-col">
-                    <?php if ( ! empty( $shortcode_name ) || ! empty( $unique_id ) ) :
+                    <?php if ( ! empty( $shortcode_name ) || ! empty( $item_id ) ) :
                         $sc_by_name = ! empty( $shortcode_name ) ? '[product_img name="' . esc_attr( $shortcode_name ) . '" alt="" class="" caption=""]' : '';
-                        $sc_by_id   = ! empty( $unique_id )      ? '[product_img id="' . esc_attr( $unique_id ) . '" alt="" class="" caption=""]' : '';
+                        $sc_by_id   = ! empty( $item_id )      ? '[product_img id="' . esc_attr( $item_id ) . '" alt="" class="" caption=""]' : '';
                     ?>
                     <div class="dt-shortcode-box">
                         <div class="dt-shortcode-box-title">
@@ -636,7 +622,7 @@ function product_image_render_row( $index, $data, $usage_count = 0 ) {
                             <button type="button"
                                 class="button dt-shortcode-find-usage"
                                 data-shortcode-name="<?php echo esc_attr( $shortcode_name ); ?>"
-                                data-unique-id="<?php echo esc_attr( $unique_id ); ?>"
+                                data-item-id="<?php echo esc_attr( $item_id ); ?>"
                                 data-item-name="<?php echo esc_attr( $name ); ?>">
                                 <span class="dashicons dashicons-search"></span>
                                 URL ที่ใช้ภาพนี้
@@ -673,12 +659,19 @@ function product_image_shortcode( $atts ) {
     $data = get_option( 'product_images_data', array() );
     $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : array();
     
-    // Find the image - prioritize by ID, fallback to shortcode name
+    // Find the image with the matching shortcode name
     $found_image = null;
+    // foreach ( $items as $item ) {
+    //     if ( isset($item['shortcode_name']) && $item['shortcode_name'] === $atts['name'] ) {
+    //         $found_image = $item;
+    //         break;
+    //     }
+    // }
     if ( ! empty( $atts['id'] ) ) {
-        $lookup_id = intval( $atts['id'] );
+        // $lookup_id = intval( $atts['id'] );
         foreach ( $items as $item ) {
-            if ( isset( $item['unique_id'] ) && intval( $item['unique_id'] ) === $lookup_id ) {
+            // if ( isset( $item['item_id'] ) && intval( $item['item_id'] ) === $lookup_id ) {
+            if ( isset($item['item_id']) && $item['item_id'] === $atts['id'] ) {
                 $found_image = $item;
                 break;
             }
@@ -715,6 +708,7 @@ function product_image_shortcode( $atts ) {
     
     // Fallback if no ID (only URL)
     if ( ! empty( $found_image['image_url'] ) ) {
+        // $alt = ! empty( $atts['alt'] ) ? $atts['alt'] : $atts['name'];
         $fallback_alt = ! empty( $atts['name'] ) ? $atts['name'] : ( isset( $found_image['shortcode_name'] ) ? $found_image['shortcode_name'] : '' );
         $alt = ! empty( $atts['alt'] ) ? $atts['alt'] : $fallback_alt;
         if ( ! empty( $atts['caption'] ) ) {
@@ -740,85 +734,7 @@ function product_image_shortcode( $atts ) {
 add_shortcode( 'product_img', 'product_image_shortcode' );
 
 /**
- * 6. Force Sync Handler (Sender only)
- * Manually pushes current product_images_data to all client sites using blocking requests.
- * This gives real-time feedback about sync success/failure per site.
- */
-add_action( 'wp_ajax_product_image_force_sync', 'product_image_force_sync_handler' );
-function product_image_force_sync_handler() {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        wp_send_json_error( array( 'message' => 'Unauthorized' ) );
-    }
-    check_ajax_referer( 'product_image_force_sync_action', '_nonce' );
-
-    if ( ! defined( 'VSQ_SYNC_OPTION_KEY' ) || ! defined( 'VSQ_SYNC_ENDPOINT_ROUTE' ) ) {
-        wp_send_json_error( array( 'message' => 'Sync system not available' ) );
-    }
-
-    $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
-    $role = isset( $vsq_settings['role'] ) ? $vsq_settings['role'] : '';
-    if ( $role !== 'sender' ) {
-        wp_send_json_error( array( 'message' => 'This site is not configured as Sender' ) );
-    }
-
-    $client_sites = isset( $vsq_settings['client_sites'] ) ? $vsq_settings['client_sites'] : array();
-    if ( empty( $client_sites ) ) {
-        wp_send_json_error( array( 'message' => 'No client sites configured' ) );
-    }
-
-    $current_value = get_option( 'product_images_data', array() );
-    $items_count = isset( $current_value['items'] ) && is_array( $current_value['items'] ) ? count( $current_value['items'] ) : 0;
-
-    $results = array();
-    foreach ( $client_sites as $site ) {
-        if ( empty( $site['url'] ) || empty( $site['key'] ) ) {
-            continue;
-        }
-
-        $endpoint = trailingslashit( $site['url'] ) . 'wp-json/' . VSQ_SYNC_ENDPOINT_ROUTE;
-        $body = array(
-            'type'       => 'option',
-            'data'       => array(
-                'name'  => 'product_images_data',
-                'value' => $current_value,
-            ),
-            'secret_key' => $site['key'],
-        );
-
-        $response = wp_remote_post( $endpoint, array(
-            'body'      => wp_json_encode( $body ),
-            'headers'   => array( 'Content-Type' => 'application/json' ),
-            'timeout'   => 30,
-            'blocking'  => true,
-            'sslverify' => false,
-        ) );
-
-        if ( is_wp_error( $response ) ) {
-            $results[] = array(
-                'url'     => $site['url'],
-                'success' => false,
-                'message' => 'Connection Error: ' . $response->get_error_message(),
-            );
-        } else {
-            $status    = wp_remote_retrieve_response_code( $response );
-            $body_resp = wp_remote_retrieve_body( $response );
-            $results[] = array(
-                'url'     => $site['url'],
-                'success' => ( $status >= 200 && $status < 300 ),
-                'status'  => $status,
-                'message' => $body_resp,
-            );
-        }
-    }
-
-    wp_send_json_success( array(
-        'items_count' => $items_count,
-        'results'     => $results,
-    ) );
-}
-
-/**
- * 7. Find Usages Handler
+ * 6. Find Usages Handler
  * ค้นหาโพสต์/เพจที่มีการเรียกใช้ shortcode [product_img name="..."] หรือ [product_img id="..."]
  * ค้นทั้งใน post_content และ postmeta (รองรับทั้ง shortcode ปกติและแบบ escaped ใน JSON/Elementor)
  */
@@ -832,9 +748,9 @@ function product_image_find_usages_handler() {
     global $wpdb;
 
     $shortcode_name = isset( $_POST['shortcode_name'] ) ? sanitize_text_field( wp_unslash( $_POST['shortcode_name'] ) ) : '';
-    $unique_id      = isset( $_POST['unique_id'] ) ? intval( $_POST['unique_id'] ) : 0;
+    $item_id      = isset( $_POST['item_id'] ) ? intval( $_POST['item_id'] ) : 0;
 
-    if ( empty( $shortcode_name ) && empty( $unique_id ) ) {
+    if ( empty( $shortcode_name ) && empty( $item_id ) ) {
         wp_send_json_error( array( 'message' => 'Missing identifier' ) );
     }
 
@@ -850,8 +766,8 @@ function product_image_find_usages_handler() {
         $patterns[] = '%[product_img%name=\\\\"' . $name_esc . '\\\\"%';
     }
 
-    if ( ! empty( $unique_id ) ) {
-        $id_esc = $wpdb->esc_like( (string) $unique_id );
+    if ( ! empty( $item_id ) ) {
+        $id_esc = $wpdb->esc_like( (string) $item_id );
         $patterns[] = '%[product_img%id="' . $id_esc . '"%';
         $patterns[] = '%[product_img%id=\\\\"' . $id_esc . '\\\\"%';
     }
@@ -938,67 +854,4 @@ function product_image_find_usages_handler() {
         'options' => $option_results,
         'total'   => count( $results ),
     ) );
-}
-
-/**
- * 8. Auto Blocking Sync หลังกด Update (Sender only)
- * ---------------------------------------------------------------
- * เหตุผล:
- *   - ระบบ sync เดิมใช้ `pre_update_option` + async HTTP (blocking=false, timeout 5s)
- *     ซึ่งอาจ fail เงียบ ๆ หาก server ช้า ทำให้ client ได้ข้อมูลไม่ครบ (ID ไม่ตรง)
- *   - Hook `updated_option` ทำงานหลัง DB บันทึกสำเร็จ → $new_value มี unique_id ที่ถูก
- *     assign ครบถ้วนแล้วจาก sanitize_option (product_image_validate_data)
- *   - ยิง blocking HTTP ซ้ำอีกรอบ รับประกันว่า client ได้รับแน่นอน
- *
- * หมายเหตุ:
- *   - ฟังก์ชันนี้ทำงานแยกต่างหากจากปุ่ม Force Sync Now (product_image_force_sync_handler)
- *     ไม่มีการเรียกข้ามกันและกัน เพื่อไม่กระทบ behavior เดิม
- *   - logic การยิง HTTP copy รูปแบบเดียวกับ Force Sync เพื่อความสอดคล้อง
- */
-add_action( 'updated_option', 'product_image_auto_sync_after_save', 20, 3 );
-function product_image_auto_sync_after_save( $option, $old_value, $new_value ) {
-    if ( $option !== 'product_images_data' ) {
-        return;
-    }
-
-    if ( ! defined( 'VSQ_SYNC_OPTION_KEY' ) || ! defined( 'VSQ_SYNC_ENDPOINT_ROUTE' ) ) {
-        return;
-    }
-
-    $vsq_settings = get_option( VSQ_SYNC_OPTION_KEY, array() );
-    $role = isset( $vsq_settings['role'] ) ? $vsq_settings['role'] : '';
-
-    // ทำงานเฉพาะ sender เท่านั้น (receiver ต้องไม่ broadcast กลับ)
-    if ( $role !== 'sender' ) {
-        return;
-    }
-
-    $client_sites = isset( $vsq_settings['client_sites'] ) ? $vsq_settings['client_sites'] : array();
-    if ( empty( $client_sites ) ) {
-        return;
-    }
-
-    foreach ( $client_sites as $site ) {
-        if ( empty( $site['url'] ) || empty( $site['key'] ) ) {
-            continue;
-        }
-
-        $endpoint = trailingslashit( $site['url'] ) . 'wp-json/' . VSQ_SYNC_ENDPOINT_ROUTE;
-        $body = array(
-            'type'       => 'option',
-            'data'       => array(
-                'name'  => 'product_images_data',
-                'value' => $new_value,
-            ),
-            'secret_key' => $site['key'],
-        );
-
-        wp_remote_post( $endpoint, array(
-            'body'      => wp_json_encode( $body ),
-            'headers'   => array( 'Content-Type' => 'application/json' ),
-            'timeout'   => 30,
-            'blocking'  => true,
-            'sslverify' => false,
-        ) );
-    }
 }
